@@ -811,6 +811,9 @@ async function generateDocx() {
     ShadingType, PageBreak, PageNumber
   } = docx;
 
+  // Helper: safe query value (null-safe)
+  const qv = (el, sel) => { const e = el.querySelector(sel); return e ? e.value : ''; };
+
   // Helper: base64 to Uint8Array
   function base64ToUint8(dataUrl) {
     const base64 = dataUrl.split(',')[1];
@@ -1029,9 +1032,9 @@ async function generateDocx() {
 
   const zoneCards = document.querySelectorAll('.zone-card');
   zoneCards.forEach((zc, idx) => {
-    const naam = zc.querySelector('.zone-naam').value;
-    const bj = zc.querySelector('.zone-bouwjaar').value;
-    const opm = zc.querySelector('.zone-opmerking').value;
+    const naam = qv(zc, '.zone-naam');
+    const bj = qv(zc, '.zone-bouwjaar');
+    const opm = qv(zc, '.zone-opmerking');
     const text = `${naam}${bj ? ': bouwjaar ' + bj : ''}${opm ? ', ' + opm : ''}`;
     children.push(new Paragraph({ spacing: { after: 60 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${text}`, size: 20, font: "Arial" })] }));
 
@@ -1132,23 +1135,24 @@ async function generateDocx() {
   // Gather toepassing data
   const toepassingen = [];
   document.querySelectorAll('.toepassing-card').forEach(tc => {
-    const ref = tc.querySelector('.toep-ref').value;
-    const zone = tc.querySelector('.toep-zone').value;
-    const type = tc.querySelector('.toep-type').value === 'Ander' ? tc.querySelector('.toep-type-ander').value : tc.querySelector('.toep-type').value;
-    const hoeveelheid = tc.querySelector('.toep-hoeveelheid').value;
-    const methode = tc.querySelector('.toep-methode').value;
-    const staalref = tc.querySelector('.toep-staalref').value;
-    const asbesttype = tc.querySelector('.toep-asbesttype-resultaat').value;
+    const ref = qv(tc, '.toep-ref');
+    const zone = qv(tc, '.toep-zone');
+    const rawType = qv(tc, '.toep-type');
+    const type = rawType === 'Ander' ? (qv(tc, '.toep-type-ander') || 'Ander') : rawType;
+    const hoeveelheid = qv(tc, '.toep-hoeveelheid');
+    const methode = qv(tc, '.toep-methode');
+    const staalref = qv(tc, '.toep-staalref');
+    const asbesttype = qv(tc, '.toep-asbesttype-resultaat');
     const isNietAsbest = type.startsWith('[NIET-ASBEST]') || asbesttype === 'Niet-asbesthoudend';
-    const gebondenheid = isNietAsbest ? 0 : parseFloat(tc.querySelector('.toep-gebondenheid').value);
-    const asbestsoort = isNietAsbest ? 0 : parseFloat(tc.querySelector('.toep-asbestsoort').value);
-    const afscherming = isNietAsbest ? 0 : parseFloat(tc.querySelector('.toep-afscherming').value);
-    const toestand = isNietAsbest ? 0 : parseFloat(tc.querySelector('.toep-toestand').value);
-    const concentratie = isNietAsbest ? 0 : parseFloat(tc.querySelector('.toep-concentratie').value);
-    const bereikbaarheid = isNietAsbest ? 'N.v.t.' : tc.querySelector('.toep-bereikbaarheid').value;
-    const verwijdering = isNietAsbest ? 'N.v.t.' : tc.querySelector('.toep-verwijdering').value;
-    const advies = tc.querySelector('.toep-advies').value;
-    const locatie = tc.querySelector('.toep-locatie').value;
+    const gebondenheid = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-gebondenheid') || '1');
+    const asbestsoort = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-asbestsoort') || '1');
+    const afscherming = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-afscherming') || '0.5');
+    const toestand = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-toestand') || '1');
+    const concentratie = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-concentratie') || '1');
+    const bereikbaarheid = isNietAsbest ? 'N.v.t.' : qv(tc, '.toep-bereikbaarheid');
+    const verwijdering = isNietAsbest ? 'N.v.t.' : qv(tc, '.toep-verwijdering');
+    const advies = qv(tc, '.toep-advies');
+    const locatie = qv(tc, '.toep-locatie');
 
     let score = 0, risico = 'Niet-asbesthoudend';
     if (!isNietAsbest) {
@@ -1212,7 +1216,7 @@ async function generateDocx() {
   // Plannen
   const planItems = document.querySelectorAll('.plan-item');
   planItems.forEach((pi, idx) => {
-    const beschrijving = pi.querySelector('.plan-beschrijving').value;
+    const beschrijving = qv(pi, '.plan-beschrijving');
     const planId = pi.id.replace('plan-', '');
     if (beschrijving) {
       children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [new TextRun({ text: beschrijving, bold: true, size: 20, font: "Arial" })] }));
