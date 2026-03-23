@@ -1454,7 +1454,8 @@ async function generateDocx() {
 
   } catch(err) {
     console.error('Docx generation error:', err);
-    alert('Fout bij het genereren: ' + err.message + '\n\nControleer de console (F12) voor details.');
+    console.error('Stack:', err.stack);
+    alert('Fout bij het genereren: ' + err.message + '\n\nLijn: ' + (err.stack ? err.stack.split('\n')[1] : 'onbekend') + '\n\nControleer de console (F12) voor details.');
   }
 }
 
