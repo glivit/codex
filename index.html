@@ -966,6 +966,8 @@ async function generateDocx() {
     children: [new TextRun({ text: "1.2 Wettelijk kader", bold: true, size: 24, font: "Arial", color: "2C3E50" })]
   }));
 
+  children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: "Deze inventaris werd opgesteld conform:", size: 20, font: "Arial" })] }));
+
   const wettelijk = [
     "Codex over het welzijn op het werk \u2013 Boek VI, Titel 3: Asbest",
     "Relevante koninklijke besluiten en decreten (o.a. KB 16 maart 2006 en latere wijzigingen)",
@@ -1034,6 +1036,8 @@ async function generateDocx() {
     children: [new TextRun({ text: "2.2 Indeling", bold: true, size: 24, font: "Arial", color: "2C3E50" })]
   }));
 
+  children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: "Overzicht van de onderzochte gebouwen, blokken of zones:", size: 20, font: "Arial" })] }));
+
   const zoneCards = document.querySelectorAll('.zone-card');
   zoneCards.forEach((zc, idx) => {
     const naam = qv(zc, '.zone-naam');
@@ -1068,8 +1072,8 @@ async function generateDocx() {
     { title: "3.1 Verzameling van bestaande gegevens", text: "Opsomming van beschikbare eerdere inventarissen, plannen, technische dossiers of verklaringen van betrokkenen." },
     { title: "3.2 Visuele inspectie en monsterneming", items: ["Inspectie van zichtbare en bereikbare delen", "Vastlegging van locatie, toestand en vermoedelijke hoeveelheden", "Monsterneming uitgevoerd volgens de geldende veiligheidsmaatregelen"] },
     { title: "3.3 Analyse van materiaalmonsters", items: ["Analyse uitgevoerd in erkend laboratorium", "Methode: polarisatiemicroscopie en dispersiekleuring (of gelijkwaardig)", "Materialen zonder staalname aangeduid als ZM (zonder monster)"] },
-    { title: "3.4 Risico-evaluatie", text: "De risico-evaluatie is gebaseerd op: kans op vrijgave van asbestvezels, kans op blootstelling en conclusie inzake blootstellingsrisico." },
-    { title: "3.5 Beheersprogramma", text: "Het beheersprogramma heeft volgens de wet tot doel de blootstelling aan asbestvezels van de werknemers zo laag mogelijk te houden (KB van 16 maart 2006, art. 12 \u00A71). Uit de beoordeling van het blootstellingsrisico voor elk van de asbesttoepassingen leiden wij af of een sanering gewenst is." },
+    { title: "3.4 Risico-evaluatie", text: "De risico-evaluatie is gebaseerd op:", items: ["Kans op vrijgave van asbestvezels", "Kans op blootstelling", "Conclusie inzake blootstellingsrisico"] },
+    { title: "3.5 Beheersprogramma", text: 'Het beheersprogramma heeft volgens de wet tot doel \u201cde blootstelling aan asbestvezels van de werknemers, die al dan niet behoren tot het personeel van de onderneming, zo laag mogelijk te houden\u201d (KB van 16 maart 2006, art. 12 \u00A71). Uit de beoordeling van het blootstellingsrisico voor elk van de asbesttoepassingen die in de gebouwen voorkomen, leiden wij af of een sanering gewenst is. Indien sanering nodig blijkt, kunnen in vele gevallen meerdere types ingrepen tegen elkaar afgewogen worden. Ook de urgentie van de ingreep kan sterk verschillen.' },
   ];
 
   werkwijzeSecties.forEach(s => {
@@ -1135,6 +1139,13 @@ async function generateDocx() {
     spacing: { before: 200, after: 100 },
     children: [new TextRun({ text: "5.1 Overzichtstabel", bold: true, size: 24, font: "Arial", color: "2C3E50" })]
   }));
+
+  children.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: "Voor elke toepassing worden minimaal volgende gegevens opgenomen:", size: 20, font: "Arial" })] }));
+  const overzichtVelden = ["Referentie", "Gebouw / zone / lokaal", "Toepassing en materiaaltype", "Hechtgebonden / niet-hechtgebonden", "Hoeveelheid (indicatief)", "Staat van het materiaal", "Bereikbaarheid (EB / NEB)", "Resultaat staalname (indien van toepassing)"];
+  overzichtVelden.forEach(v => {
+    children.push(new Paragraph({ spacing: { after: 30 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${v}`, size: 20, font: "Arial" })] }));
+  });
+  children.push(new Paragraph({ spacing: { after: 200 }, children: [] }));
 
   // Gather toepassing data
   const toepassingen = [];
@@ -1217,8 +1228,13 @@ async function generateDocx() {
     children: [new TextRun({ text: "5.2 Plannen en foto\u2019s", bold: true, size: 24, font: "Arial", color: "2C3E50" })]
   }));
 
-  // Plannen
+  // Sub-label: Plannen
+  children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [new TextRun({ text: "Plannen", bold: true, size: 22, font: "Arial", color: "2C3E50" })] }));
+
   const planItems = document.querySelectorAll('.plan-item');
+  if (planItems.length === 0) {
+    children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: "Geen plannen toegevoegd.", size: 20, font: "Arial", italics: true })] }));
+  }
   planItems.forEach((pi, idx) => {
     const beschrijving = qv(pi, '.plan-beschrijving');
     const planId = pi.id.replace('plan-', '');
@@ -1235,6 +1251,34 @@ async function generateDocx() {
         }));
       } catch(e) { console.warn('Plan foto error', e); }
     }
+  });
+
+  // Sub-label: Foto's van de toestand tijdens inspectie — gegroepeerd per zone
+  children.push(new Paragraph({ spacing: { before: 200, after: 60 }, children: [new TextRun({ text: "Foto\u2019s van de toestand tijdens inspectie", bold: true, size: 22, font: "Arial", color: "2C3E50" })] }));
+
+  // Groepeer toepassingen per zone voor foto's
+  const zonesMetFotos = {};
+  toepassingen.forEach(t => {
+    const zoneKey = t.zone || 'Onbekende zone';
+    if (!zonesMetFotos[zoneKey]) zonesMetFotos[zoneKey] = [];
+    if (t.fotos && t.fotos.length > 0) zonesMetFotos[zoneKey].push(t);
+  });
+
+  Object.keys(zonesMetFotos).forEach(zoneKey => {
+    if (zonesMetFotos[zoneKey].length === 0) return;
+    children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [new TextRun({ text: zoneKey, bold: true, size: 20, font: "Arial" })] }));
+    zonesMetFotos[zoneKey].forEach(t => {
+      t.fotos.forEach((foto, fi) => {
+        try {
+          children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 40, after: 40 },
+            children: [new ImageRun({
+              data: base64ToUint8(foto.data),
+              transformation: { width: 300, height: 220 }
+            })]
+          }));
+        } catch(e) { console.warn('Zone foto overzicht error', e); }
+      });
+    });
   });
 
   // Detail fiches per toepassing
@@ -1329,6 +1373,8 @@ async function generateDocx() {
     children.push(new Paragraph({ spacing: { after: 40 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${r}`, size: 20, font: "Arial" })] }));
   });
 
+  children.push(new Paragraph({ spacing: { before: 100, after: 100 }, children: [new TextRun({ text: "De evaluatie houdt rekening met het normaal gebruik van de constructie.", size: 20, font: "Arial" })] }));
+
   // --- SECTIE 7: BEHEERSPROGRAMMA ---
   children.push(new Paragraph({ children: [new PageBreak()] }));
   children.push(new Paragraph({
@@ -1339,7 +1385,7 @@ async function generateDocx() {
 
   const beheerSecties = [
     { title: "7.1 Algemene bepalingen", items: ["Minstens jaarlijkse visuele controle", "Registratie en actualisatie van de inventaris", "Informatieverstrekking aan werknemers en derden"] },
-    { title: "7.2 Voorgestelde maatregelen", text: "Per toepassing kan \u00e9\u00e9n van de volgende maatregelen van toepassing zijn: periodieke visuele controle, fixeren of inkapselen, of verwijderen." },
+    { title: "7.2 Voorgestelde maatregelen", text: "Per toepassing kan \u00e9\u00e9n van de volgende maatregelen van toepassing zijn:", items: ["Periodieke visuele controle", "Fixeren of inkapselen", "Verwijderen"] },
     { title: "7.3 Verwijdering van asbesthoudende materialen", items: ["Techniek van eenvoudige handelingen (hechtgebonden, onbeschadigd, zonder destructieve handelingen)", "Hermetische zone (niet-hechtgebonden of zwaar beschadigd)", "Couveusezakmethode (indien van toepassing)", "Uitvoering conform de geldende regelgeving en door bevoegde aannemers"] },
     { title: "7.4 Asbestafval", items: ["Scheiding van asbesthoudend afval", "Afvoer via erkende kanalen", "Naleving van acceptatiecriteria van verwerkingsinstallaties"] },
   ];
@@ -1368,16 +1414,56 @@ async function generateDocx() {
     children: [new TextRun({ text: "8. Conclusie", bold: true, size: 28, font: "Arial", color: "1A5276" })]
   }));
 
-  if (toepassingen.length > 0) {
+  // Splits toepassingen in asbesthoudend en niet-asbesthoudend
+  const asbestToepassingen = toepassingen.filter(t => !t.isNietAsbest);
+  const nietAsbestToepassingen = toepassingen.filter(t => t.isNietAsbest);
+
+  if (asbestToepassingen.length > 0) {
     children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: "Aangetroffen asbesthoudende toepassingen", bold: true, size: 22, font: "Arial", underline: {} })] }));
 
-    toepassingen.forEach(t => {
-      children.push(new Paragraph({ spacing: { after: 60 }, children: [
-        new TextRun({ text: `${t.ref} \u2014 ${t.type}`, bold: true, size: 20, font: "Arial" }),
-        new TextRun({ text: ` (${t.zone})`, size: 20, font: "Arial" }),
+    // Narratieve beschrijving per toepassing
+    asbestToepassingen.forEach(t => {
+      const gebDesc = t.gebondenheid === 1 ? 'hechtgebonden' : 'niet-hechtgebonden';
+      const toestandDesc = t.toestand <= 1 ? 'onbeschadigde toestand' : (t.toestand <= 2 ? 'licht beschadigde toestand' : (t.toestand <= 5 ? 'matig beschadigde toestand' : 'zwaar beschadigde toestand'));
+      const bereikDesc = t.bereikbaarheid === 'EB' ? 'eenvoudig bereikbaar' : 'niet eenvoudig bereikbaar';
+
+      children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [
+        new TextRun({ text: `${t.ref} — ${t.type} (${t.zone})`, bold: true, size: 20, font: "Arial" }),
       ]}));
-      children.push(new Paragraph({ spacing: { after: 40 }, indent: { left: 360 }, children: [new TextRun({ text: `Materiaalrisico: ${t.risico} (score ${t.score.toFixed(1)})`, size: 20, font: "Arial" })] }));
-      children.push(new Paragraph({ spacing: { after: 80 }, indent: { left: 360 }, children: [new TextRun({ text: `Aanbevolen maatregel: ${t.verwijdering}`, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `In ${t.zone.toLowerCase()} ${t.hoeveelheid ? 'werd(en) ' + t.type.toLowerCase() + ' (' + t.hoeveelheid + ') aangetroffen' : 'werd(en) ' + t.type.toLowerCase() + ' aangetroffen'}${t.locatie ? ' ter hoogte van ' + t.locatie.toLowerCase() : ''}. Deze materialen zijn ${gebDesc} en bevinden zich in een ${toestandDesc}. Het materiaal is ${bereikDesc}.`, size: 20, font: "Arial" })] }));
+
+      // Inschatting blootstellingsrisico
+      children.push(new Paragraph({ spacing: { before: 80, after: 60 }, children: [new TextRun({ text: "Inschatting van het blootstellingsrisico", bold: true, italics: true, size: 20, font: "Arial" })] }));
+      let risicoNarratief = '';
+      if (t.risico === 'Zeer laag' || t.risico === 'Laag') {
+        risicoNarratief = `Het blootstellingsrisico is ${t.risico.toLowerCase()} (materiaalscore ${t.score.toFixed(1)}) bij normaal gebruik. Er is geen onmiddellijke blootstelling voor gebruikers of onderhoudspersoneel, zolang geen ingrepen aan het materiaal plaatsvinden.`;
+      } else if (t.risico === 'Verhoogd') {
+        risicoNarratief = `Het blootstellingsrisico is verhoogd (materiaalscore ${t.score.toFixed(1)}). Bijzondere aandacht en/of sanering op korte termijn is aangewezen.`;
+      } else {
+        risicoNarratief = `Het blootstellingsrisico is hoog (materiaalscore ${t.score.toFixed(1)}). Dringende sanering is noodzakelijk.`;
+      }
+      children.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: risicoNarratief, size: 20, font: "Arial" })] }));
+
+      // Aanbevolen beheers- en saneringsmaatregelen
+      children.push(new Paragraph({ spacing: { before: 80, after: 60 }, children: [new TextRun({ text: "Aanbevolen beheers- en saneringsmaatregelen", bold: true, italics: true, size: 20, font: "Arial" })] }));
+
+      if (t.verwijdering === 'Beheer in situ (periodieke controle)') {
+        children.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `De aangetroffen asbesthoudende materialen dienen te worden beheerd in situ. Een periodieke visuele controle (minstens jaarlijks) is voldoende zolang het materiaal in goede staat verkeert en niet beroerd wordt.`, size: 20, font: "Arial" })] }));
+      } else if (t.verwijdering === 'Fixeren of inkapselen') {
+        children.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `Het materiaal dient te worden gefixeerd of ingekapseld om verdere degradatie en vezeluitstoot te voorkomen. Na inkapseling dient een periodieke visuele controle te worden uitgevoerd.`, size: 20, font: "Arial" })] }));
+      } else if (t.verwijdering === 'Eenvoudige handelingen') {
+        children.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `Eventuele verwijdering kan, indien voldaan is aan de voorwaarden van eenvoudige handelingen zoals bepaald in de Codex Welzijn op het Werk, worden uitgevoerd zonder inzet van een erkend asbestverwijderaar.`, size: 20, font: "Arial" })] }));
+        children.push(new Paragraph({ spacing: { before: 60, after: 40 }, children: [new TextRun({ text: "Toegelaten via eenvoudige handelingen wanneer:", bold: true, size: 20, font: "Arial" })] }));
+        const ehVoorw = ["Het gaat om hechtgebonden asbest", "De materialen zijn onbeschadigd of licht beschadigd", "De verwijdering gebeurt zonder breken, zagen, boren of slijpen", "Er wordt gewerkt volgens de wettelijk vastgelegde eenvoudige handelingen", "De uitvoerders zijn correct ge\u00efnformeerd en opgeleid", "De nodige persoonlijke beschermingsmiddelen worden gebruikt", "De vrijgekomen asbest wordt correct verpakt en afgevoerd"];
+        ehVoorw.forEach(v => children.push(new Paragraph({ spacing: { after: 30 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${v}`, size: 20, font: "Arial" })] })));
+        children.push(new Paragraph({ spacing: { before: 60, after: 40 }, children: [new TextRun({ text: "W\u00e9l verplicht een erkend asbestverwijderaar indien:", bold: true, size: 20, font: "Arial" })] }));
+        const erkVoorw = ["De materialen beschadigd, verweerd of broos zijn", "Er destructieve handelingen nodig zijn", "De materialen moeilijk bereikbaar zijn (hoogte, complexe structuur)", "Er sprake is van niet-hechtgebonden asbest", "De werken niet veilig kunnen gebeuren volgens eenvoudige handelingen"];
+        erkVoorw.forEach(v => children.push(new Paragraph({ spacing: { after: 30 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${v}`, size: 20, font: "Arial" })] })));
+      } else if (t.verwijdering === 'Erkend asbestverwijderaar' || t.verwijdering === 'Hermetische zone' || t.verwijdering === 'Couveusezakmethode') {
+        children.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `De verwijdering dient te gebeuren door een erkend asbestverwijderaar, conform de geldende regelgeving. De verwijderingsmethode (${t.verwijdering.toLowerCase()}) wordt bepaald op basis van de aard en toestand van het materiaal.`, size: 20, font: "Arial" })] }));
+      }
+
+      children.push(new Paragraph({ spacing: { after: 100 }, children: [] })); // spacing between toepassingen
     });
   }
 
@@ -1389,23 +1475,35 @@ async function generateDocx() {
 
   if (nietAsbDak || nietAsbStruct || nietAsbWanden || nietAsbVloeren) {
     children.push(new Paragraph({ spacing: { before: 200, after: 100 }, children: [new TextRun({ text: "Niet-asbestverdacht", bold: true, size: 22, font: "Arial", underline: {} })] }));
+    children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: "Tijdens de visuele inspectie van de overige zones van het gebouw werden geen asbestverdachte materialen vastgesteld.", size: 20, font: "Arial" })] }));
 
     if (nietAsbDak) {
-      children.push(new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: "Dak- en plafondafwerking", bold: true, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { before: 60, after: 40 }, children: [new TextRun({ text: "Dak- en plafondafwerking", bold: true, size: 20, font: "Arial" })] }));
       children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: nietAsbDak, size: 20, font: "Arial" })] }));
     }
     if (nietAsbStruct) {
-      children.push(new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: "Dragende structuur", bold: true, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { before: 60, after: 40 }, children: [new TextRun({ text: "Dragende structuur", bold: true, size: 20, font: "Arial" })] }));
       children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: nietAsbStruct, size: 20, font: "Arial" })] }));
     }
     if (nietAsbWanden) {
-      children.push(new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: "Wanden en gevels", bold: true, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { before: 60, after: 40 }, children: [new TextRun({ text: "Wanden en gevels", bold: true, size: 20, font: "Arial" })] }));
       children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: nietAsbWanden, size: 20, font: "Arial" })] }));
     }
     if (nietAsbVloeren) {
-      children.push(new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: "Vloeren en overige vaste elementen", bold: true, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { before: 60, after: 40 }, children: [new TextRun({ text: "Vloeren en overige vaste elementen", bold: true, size: 20, font: "Arial" })] }));
       children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: nietAsbVloeren, size: 20, font: "Arial" })] }));
     }
+  }
+
+  // Niet-asbesthoudende toepassingen uit inventaris
+  if (nietAsbestToepassingen.length > 0) {
+    children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [new TextRun({ text: "Niet-asbesthoudende toepassingen (controle)", bold: true, italics: true, size: 20, font: "Arial" })] }));
+    nietAsbestToepassingen.forEach(t => {
+      children.push(new Paragraph({ spacing: { after: 40 }, children: [
+        new TextRun({ text: `${t.ref} \u2014 ${t.type}`, bold: true, size: 20, font: "Arial" }),
+        new TextRun({ text: ` (${t.zone}): na analyse/inspectie als niet-asbesthoudend beoordeeld.`, size: 20, font: "Arial" }),
+      ]}));
+    });
   }
 
   // ===== BUILD DOCUMENT =====
