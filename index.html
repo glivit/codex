@@ -122,7 +122,7 @@ header p { opacity: 0.8; font-size: 0.9rem; }
   <div class="container">
     <div>
       <h1>Codex Asbestinventaris Generator</h1>
-      <p>Genereer professionele codex-documenten conform de Codex Welzijn op het Werk</p>
+      <p>Genereer professionele codex-documenten conform de Codex Welzijn op het Werk <span style="opacity:0.5;font-size:0.7rem;">v2.1</span></p>
     </div>
   </div>
 </header>
@@ -815,8 +815,8 @@ async function generateDocx() {
     ShadingType, PageBreak, PageNumber
   } = docx;
 
-  // Helper: safe query value (null-safe)
-  const qv = (el, sel) => { const e = el.querySelector(sel); return e ? e.value : ''; };
+  // Helper: safe query value (fully null-safe)
+  const qv = (el, sel) => { if (!el) return ''; const e = el.querySelector(sel); return e ? e.value : ''; };
 
   // Helper: base64 to Uint8Array
   function base64ToUint8(dataUrl) {
@@ -825,6 +825,109 @@ async function generateDocx() {
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
     return bytes;
+  }
+
+  // Helper: lees EXIF-oriëntatie uit JPEG bytes
+  function getExifOrientation(bytes) {
+    if (bytes[0] !== 0xFF || bytes[1] !== 0xD8) return 1; // niet JPEG
+    let offset = 2;
+    while (offset < bytes.length - 1) {
+      if (bytes[offset] !== 0xFF) return 1;
+      const marker = bytes[offset + 1];
+      if (marker === 0xE1) { // APP1 = EXIF
+        const len = (bytes[offset + 2] << 8) | bytes[offset + 3];
+        const exifStart = offset + 4;
+        // Check "Exif\0\0"
+        if (bytes[exifStart] === 0x45 && bytes[exifStart+1] === 0x78 && bytes[exifStart+2] === 0x69 && bytes[exifStart+3] === 0x66) {
+          const tiffStart = exifStart + 6;
+          const isLE = bytes[tiffStart] === 0x49; // II = little-endian
+          const read16 = (o) => isLE ? (bytes[o] | (bytes[o+1] << 8)) : ((bytes[o] << 8) | bytes[o+1]);
+          const ifdOffset = tiffStart + (isLE ? (bytes[tiffStart+4] | (bytes[tiffStart+5] << 8) | (bytes[tiffStart+6] << 16) | (bytes[tiffStart+7] << 24)) : ((bytes[tiffStart+4] << 24) | (bytes[tiffStart+5] << 16) | (bytes[tiffStart+6] << 8) | bytes[tiffStart+7]));
+          const numEntries = read16(ifdOffset);
+          for (let i = 0; i < numEntries; i++) {
+            const entryOffset = ifdOffset + 2 + i * 12;
+            if (entryOffset + 12 > bytes.length) break;
+            const tag = read16(entryOffset);
+            if (tag === 0x0112) { // Orientation tag
+              return read16(entryOffset + 8);
+            }
+          }
+        }
+        return 1;
+      }
+      if (marker === 0xDA) return 1; // SOS = start of scan, stop
+      const segLen = (bytes[offset + 2] << 8) | bytes[offset + 3];
+      offset += 2 + segLen;
+    }
+    return 1;
+  }
+
+  // Helper: corrigeer EXIF-oriëntatie en schaal afbeelding proportioneel
+  // Geeft Promise terug met { data: Uint8Array, width: px, height: px }
+  function processImage(dataUrl, maxWidth, maxHeight) {
+    return new Promise((resolve) => {
+      const rawBytes = base64ToUint8(dataUrl);
+      const orientation = getExifOrientation(rawBytes);
+
+      const img = new Image();
+      img.onload = function() {
+        let w = img.naturalWidth;
+        let h = img.naturalHeight;
+
+        // Bepaal of rotatie nodig is (oriëntatie 5-8 = breedte/hoogte omwisselen)
+        const needsSwap = orientation >= 5 && orientation <= 8;
+        const drawW = needsSwap ? h : w;
+        const drawH = needsSwap ? w : h;
+
+        // Schaal proportioneel
+        let scale = 1;
+        if (drawW > maxWidth) scale = maxWidth / drawW;
+        if (drawH * scale > maxHeight) scale = maxHeight / drawH;
+        const finalW = Math.round(drawW * scale);
+        const finalH = Math.round(drawH * scale);
+
+        // Canvas met correcte oriëntatie
+        const canvas = document.createElement('canvas');
+        canvas.width = finalW;
+        canvas.height = finalH;
+        const ctx = canvas.getContext('2d');
+
+        ctx.save();
+        // Pas EXIF-transformatie toe
+        switch (orientation) {
+          case 2: ctx.translate(finalW, 0); ctx.scale(-1, 1); break;
+          case 3: ctx.translate(finalW, finalH); ctx.rotate(Math.PI); break;
+          case 4: ctx.translate(0, finalH); ctx.scale(1, -1); break;
+          case 5: ctx.translate(finalW, 0); ctx.rotate(Math.PI/2); ctx.scale(1, -1); break;
+          case 6: ctx.translate(finalW, 0); ctx.rotate(Math.PI/2); break;
+          case 7: ctx.translate(0, finalH); ctx.rotate(-Math.PI/2); ctx.scale(1, -1); break;
+          case 8: ctx.translate(0, finalH); ctx.rotate(-Math.PI/2); break;
+          default: break;
+        }
+
+        // Teken de afbeelding (bij rotatie 5-8 moeten breedte/hoogte omgewisseld worden voor draw)
+        if (needsSwap) {
+          ctx.drawImage(img, 0, 0, finalH, finalW);
+        } else {
+          ctx.drawImage(img, 0, 0, finalW, finalH);
+        }
+        ctx.restore();
+
+        // Exporteer als PNG
+        canvas.toBlob(function(blob) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            resolve({ data: base64ToUint8(e.target.result), width: finalW, height: finalH });
+          };
+          reader.readAsDataURL(blob);
+        }, 'image/png');
+      };
+      img.onerror = function() {
+        // Fallback: gebruik origineel zonder correctie
+        resolve({ data: rawBytes, width: maxWidth, height: maxHeight });
+      };
+      img.src = dataUrl;
+    });
   }
 
   // Collect form data
@@ -887,13 +990,13 @@ async function generateDocx() {
   // Voorblad foto
   if (fileData['foto_voorblad']) {
     try {
-      const imgBytes = base64ToUint8(fileData['foto_voorblad'].data);
+      const vbImg = await processImage(fileData['foto_voorblad'].data, 400, 350);
       children.push(new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { after: 400 },
         children: [new ImageRun({
-          data: imgBytes,
-          transformation: { width: 400, height: 300 }
+          data: vbImg.data,
+          transformation: { width: vbImg.width, height: vbImg.height }
         })]
       }));
     } catch(e) { console.warn('Foto voorblad error', e); }
@@ -1020,10 +1123,11 @@ async function generateDocx() {
   // Situering foto
   if (fileData['foto_situering']) {
     try {
+      const sitImg = await processImage(fileData['foto_situering'].data, 500, 400);
       children.push(new Paragraph({ spacing: { before: 200, after: 200 }, alignment: AlignmentType.CENTER,
         children: [new ImageRun({
-          data: base64ToUint8(fileData['foto_situering'].data),
-          transformation: { width: 480, height: 380 }
+          data: sitImg.data,
+          transformation: { width: sitImg.width, height: sitImg.height }
         })]
       }));
     } catch(e) { console.warn('Situering foto error', e); }
@@ -1039,7 +1143,7 @@ async function generateDocx() {
   children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: "Overzicht van de onderzochte gebouwen, blokken of zones:", size: 20, font: "Arial" })] }));
 
   const zoneCards = document.querySelectorAll('.zone-card');
-  zoneCards.forEach((zc, idx) => {
+  for (const zc of zoneCards) {
     const naam = qv(zc, '.zone-naam');
     const bj = qv(zc, '.zone-bouwjaar');
     const opm = qv(zc, '.zone-opmerking');
@@ -1050,15 +1154,16 @@ async function generateDocx() {
     const zoneId = zc.id.replace('zone-', '');
     if (fileData[`zone_foto_${zoneId}`]) {
       try {
+        const zImg = await processImage(fileData[`zone_foto_${zoneId}`].data, 380, 300);
         children.push(new Paragraph({ spacing: { before: 100, after: 200 }, alignment: AlignmentType.CENTER,
           children: [new ImageRun({
-            data: base64ToUint8(fileData[`zone_foto_${zoneId}`].data),
-            transformation: { width: 350, height: 260 }
+            data: zImg.data,
+            transformation: { width: zImg.width, height: zImg.height }
           })]
         }));
       } catch(e) { console.warn('Zone foto error', e); }
     }
-  });
+  }
 
   // --- SECTIE 3: WERKWIJZE ---
   children.push(new Paragraph({ children: [new PageBreak()] }));
@@ -1103,7 +1208,7 @@ async function generateDocx() {
   // Standaardbeperkingen (alleen de aangevinkte)
   const stdBeperkingen = document.querySelectorAll('.std-beperking:checked');
   stdBeperkingen.forEach(cb => {
-    children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: cb.value, size: 20, font: "Arial" })] }));
+    if (cb && cb.value) children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: cb.value, size: 20, font: "Arial" })] }));
   });
 
   // Niet-onderzocht items (alleen aangevinkte)
@@ -1111,14 +1216,14 @@ async function generateDocx() {
   if (stdBepItems.length > 0) {
     children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [new TextRun({ text: "Niet onderzocht:", bold: true, size: 20, font: "Arial" })] }));
     stdBepItems.forEach(cb => {
-      children.push(new Paragraph({ spacing: { after: 40 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${cb.value}`, size: 20, font: "Arial" })] }));
+      if (cb && cb.value) children.push(new Paragraph({ spacing: { after: 40 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${cb.value}`, size: 20, font: "Arial" })] }));
     });
   }
 
   // Extra beperkingen (dynamisch toegevoegd)
   const extraBeperkingen = document.querySelectorAll('.beperking-tekst');
   extraBeperkingen.forEach(input => {
-    if (input.value.trim()) {
+    if (input && input.value && input.value.trim()) {
       children.push(new Paragraph({ spacing: { before: 60, after: 60 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${input.value.trim()}`, size: 20, font: "Arial" })] }));
     }
   });
@@ -1150,41 +1255,46 @@ async function generateDocx() {
   // Gather toepassing data
   const toepassingen = [];
   document.querySelectorAll('.toepassing-card').forEach(tc => {
-    const ref = qv(tc, '.toep-ref');
-    const zone = qv(tc, '.toep-zone');
-    const rawType = qv(tc, '.toep-type');
-    const type = rawType === 'Ander' ? (qv(tc, '.toep-type-ander') || 'Ander') : rawType;
-    const hoeveelheid = qv(tc, '.toep-hoeveelheid');
-    const methode = qv(tc, '.toep-methode');
-    const staalref = qv(tc, '.toep-staalref');
-    const asbesttype = qv(tc, '.toep-asbesttype-resultaat');
-    const isNietAsbest = type.startsWith('[NIET-ASBEST]') || asbesttype === 'Niet-asbesthoudend';
-    const gebondenheid = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-gebondenheid') || '1');
-    const asbestsoort = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-asbestsoort') || '1');
-    const afscherming = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-afscherming') || '0.5');
-    const toestand = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-toestand') || '1');
-    const concentratie = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-concentratie') || '1');
-    const bereikbaarheid = isNietAsbest ? 'N.v.t.' : qv(tc, '.toep-bereikbaarheid');
-    const verwijdering = isNietAsbest ? 'N.v.t.' : qv(tc, '.toep-verwijdering');
-    const advies = qv(tc, '.toep-advies');
-    const locatie = qv(tc, '.toep-locatie');
+    try {
+      if (!tc || !tc.querySelector) return; // skip invalid elements
+      const ref = qv(tc, '.toep-ref');
+      const zone = qv(tc, '.toep-zone');
+      const rawType = qv(tc, '.toep-type');
+      const type = rawType === 'Ander' ? (qv(tc, '.toep-type-ander') || 'Ander') : (rawType || '');
+      const hoeveelheid = qv(tc, '.toep-hoeveelheid');
+      const methode = qv(tc, '.toep-methode');
+      const staalref = qv(tc, '.toep-staalref');
+      const asbesttype = qv(tc, '.toep-asbesttype-resultaat');
+      const isNietAsbest = (type && type.startsWith('[NIET-ASBEST]')) || asbesttype === 'Niet-asbesthoudend';
+      const gebondenheid = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-gebondenheid') || '1');
+      const asbestsoort = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-asbestsoort') || '1');
+      const afscherming = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-afscherming') || '0.5');
+      const toestand = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-toestand') || '1');
+      const concentratie = isNietAsbest ? 0 : parseFloat(qv(tc, '.toep-concentratie') || '1');
+      const bereikbaarheid = isNietAsbest ? 'N.v.t.' : (qv(tc, '.toep-bereikbaarheid') || 'EB');
+      const verwijdering = isNietAsbest ? 'N.v.t.' : (qv(tc, '.toep-verwijdering') || 'Beheer in situ (periodieke controle)');
+      const advies = qv(tc, '.toep-advies');
+      const locatie = qv(tc, '.toep-locatie');
 
-    let score = 0, risico = 'Niet-asbesthoudend';
-    if (!isNietAsbest) {
-      score = ((gebondenheid + asbestsoort) * afscherming * toestand) * concentratie;
-      if (score < 9) risico = 'Zeer laag';
-      else if (score <= 24) risico = 'Laag';
-      else if (score <= 60) risico = 'Verhoogd';
-      else risico = 'Hoog';
+      let score = 0, risico = 'Niet-asbesthoudend';
+      if (!isNietAsbest) {
+        score = ((gebondenheid + asbestsoort) * afscherming * toestand) * concentratie;
+        if (score < 9) risico = 'Zeer laag';
+        else if (score <= 24) risico = 'Laag';
+        else if (score <= 60) risico = 'Verhoogd';
+        else risico = 'Hoog';
+      }
+
+      const gebLabel = isNietAsbest ? 'N.v.t.' : (gebondenheid === 1 ? 'Hechtgebonden' : 'Niet-hechtgebonden');
+
+      const tcId = tc.id ? tc.id.replace('toepassing-', '') : '0';
+      const fotos = fileData[`toep_fotos_${tcId}`] || [];
+      const displayType = (type || '').replace('[NIET-ASBEST] ', '');
+
+      toepassingen.push({ ref: ref || '', zone: zone || '', type: displayType, hoeveelheid: hoeveelheid || '', methode: methode || '', staalref, asbesttype: asbesttype || '', gebLabel, bereikbaarheid, score, risico, verwijdering, advies: advies || '', locatie: locatie || '', fotos, gebondenheid, asbestsoort, afscherming, toestand, concentratie, isNietAsbest });
+    } catch(e) {
+      console.warn('Fout bij verwerken toepassing:', e, tc);
     }
-
-    const gebLabel = isNietAsbest ? 'N.v.t.' : (gebondenheid === 1 ? 'Hechtgebonden' : 'Niet-hechtgebonden');
-
-    const tcId = tc.id.replace('toepassing-', '');
-    const fotos = fileData[`toep_fotos_${tcId}`] || [];
-    const displayType = type.replace('[NIET-ASBEST] ', '');
-
-    toepassingen.push({ ref, zone, type: displayType, hoeveelheid, methode, staalref, asbesttype, gebLabel, bereikbaarheid, score, risico, verwijdering, advies, locatie, fotos, gebondenheid, asbestsoort, afscherming, toestand, concentratie, isNietAsbest });
   });
 
   if (toepassingen.length > 0) {
@@ -1203,11 +1313,11 @@ async function generateDocx() {
 
     const dataRows = toepassingen.map(t => new TableRow({
       children: [
-        [t.ref, t.zone, t.type, t.gebLabel, t.hoeveelheid, t.bereikbaarheid, t.risico, t.score.toFixed(1)].map((val, i) =>
+        [t.ref || '', t.zone || '', t.type || '', t.gebLabel || '', t.hoeveelheid || '', t.bereikbaarheid || '', t.risico || '', (t.score != null ? t.score.toFixed(1) : '0')].map((v, i) =>
           new TableCell({
             borders, margins: cellMargins,
             width: { size: colWidths[i], type: WidthType.DXA },
-            children: [new Paragraph({ children: [new TextRun({ text: val || '-', size: 16, font: "Arial" })] })]
+            children: [new Paragraph({ children: [new TextRun({ text: String(v || '-'), size: 16, font: "Arial" })] })]
           })
         )
       ].flat()
@@ -1235,7 +1345,7 @@ async function generateDocx() {
   if (planItems.length === 0) {
     children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: "Geen plannen toegevoegd.", size: 20, font: "Arial", italics: true })] }));
   }
-  planItems.forEach((pi, idx) => {
+  for (const pi of planItems) {
     const beschrijving = qv(pi, '.plan-beschrijving');
     const planId = pi.id.replace('plan-', '');
     if (beschrijving) {
@@ -1243,15 +1353,16 @@ async function generateDocx() {
     }
     if (fileData[`plan_foto_${planId}`]) {
       try {
+        const plImg = await processImage(fileData[`plan_foto_${planId}`].data, 550, 700);
         children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 200 },
           children: [new ImageRun({
-            data: base64ToUint8(fileData[`plan_foto_${planId}`].data),
-            transformation: { width: 500, height: 400 }
+            data: plImg.data,
+            transformation: { width: plImg.width, height: plImg.height }
           })]
         }));
       } catch(e) { console.warn('Plan foto error', e); }
     }
-  });
+  }
 
   // Sub-label: Foto's van de toestand tijdens inspectie — gegroepeerd per zone
   children.push(new Paragraph({ spacing: { before: 200, after: 60 }, children: [new TextRun({ text: "Foto\u2019s van de toestand tijdens inspectie", bold: true, size: 22, font: "Arial", color: "2C3E50" })] }));
@@ -1264,25 +1375,27 @@ async function generateDocx() {
     if (t.fotos && t.fotos.length > 0) zonesMetFotos[zoneKey].push(t);
   });
 
-  Object.keys(zonesMetFotos).forEach(zoneKey => {
-    if (zonesMetFotos[zoneKey].length === 0) return;
+  for (const zoneKey of Object.keys(zonesMetFotos)) {
+    if (zonesMetFotos[zoneKey].length === 0) continue;
     children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [new TextRun({ text: zoneKey, bold: true, size: 20, font: "Arial" })] }));
-    zonesMetFotos[zoneKey].forEach(t => {
-      t.fotos.forEach((foto, fi) => {
+    for (const t of zonesMetFotos[zoneKey]) {
+      for (const foto of t.fotos) {
         try {
+          const zfImg = await processImage(foto.data, 320, 260);
           children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 40, after: 40 },
             children: [new ImageRun({
-              data: base64ToUint8(foto.data),
-              transformation: { width: 300, height: 220 }
+              data: zfImg.data,
+              transformation: { width: zfImg.width, height: zfImg.height }
             })]
           }));
         } catch(e) { console.warn('Zone foto overzicht error', e); }
-      });
-    });
-  });
+      }
+    }
+  }
 
   // Detail fiches per toepassing
-  toepassingen.forEach((t, idx) => {
+  for (let idx = 0; idx < toepassingen.length; idx++) {
+    const t = toepassingen[idx];
     children.push(new Paragraph({ children: [new PageBreak()] }));
     children.push(new Paragraph({
       heading: HeadingLevel.HEADING_2,
@@ -1340,18 +1453,19 @@ async function generateDocx() {
     // Foto's
     if (t.fotos && t.fotos.length > 0) {
       children.push(new Paragraph({ spacing: { before: 100 }, children: [new TextRun({ text: "Foto\u2019s:", bold: true, size: 20, font: "Arial" })] }));
-      t.fotos.forEach((foto, fi) => {
+      for (const foto of t.fotos) {
         try {
+          const tfImg = await processImage(foto.data, 380, 300);
           children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 60, after: 100 },
             children: [new ImageRun({
-              data: base64ToUint8(foto.data),
-              transformation: { width: 350, height: 260 }
+              data: tfImg.data,
+              transformation: { width: tfImg.width, height: tfImg.height }
             })]
           }));
         } catch(e) { console.warn('Toepassing foto error', e); }
-      });
+      }
     }
-  });
+  }
 
   // --- SECTIE 6: RISICO-EVALUATIE ---
   children.push(new Paragraph({ children: [new PageBreak()] }));
@@ -1430,7 +1544,7 @@ async function generateDocx() {
       children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [
         new TextRun({ text: `${t.ref} — ${t.type} (${t.zone})`, bold: true, size: 20, font: "Arial" }),
       ]}));
-      children.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `In ${t.zone.toLowerCase()} ${t.hoeveelheid ? 'werd(en) ' + t.type.toLowerCase() + ' (' + t.hoeveelheid + ') aangetroffen' : 'werd(en) ' + t.type.toLowerCase() + ' aangetroffen'}${t.locatie ? ' ter hoogte van ' + t.locatie.toLowerCase() : ''}. Deze materialen zijn ${gebDesc} en bevinden zich in een ${toestandDesc}. Het materiaal is ${bereikDesc}.`, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `In ${(t.zone || 'het gebouw').toLowerCase()} ${t.hoeveelheid ? 'werd(en) ' + (t.type || 'materiaal').toLowerCase() + ' (' + t.hoeveelheid + ') aangetroffen' : 'werd(en) ' + (t.type || 'materiaal').toLowerCase() + ' aangetroffen'}${t.locatie ? ' ter hoogte van ' + t.locatie.toLowerCase() : ''}. Deze materialen zijn ${gebDesc} en bevinden zich in een ${toestandDesc}. Het materiaal is ${bereikDesc}.`, size: 20, font: "Arial" })] }));
 
       // Inschatting blootstellingsrisico
       children.push(new Paragraph({ spacing: { before: 80, after: 60 }, children: [new TextRun({ text: "Inschatting van het blootstellingsrisico", bold: true, italics: true, size: 20, font: "Arial" })] }));
@@ -1557,7 +1671,14 @@ async function generateDocx() {
   } catch(err) {
     console.error('Docx generation error:', err);
     console.error('Stack:', err.stack);
-    alert('Fout bij het genereren: ' + err.message + '\n\nLijn: ' + (err.stack ? err.stack.split('\n')[1] : 'onbekend') + '\n\nControleer de console (F12) voor details.');
+    // Geef meer detail in de foutmelding
+    let detail = err.message;
+    if (err.stack) {
+      const stackLines = err.stack.split('\n');
+      const relevantLine = stackLines.find(l => l.includes('generateDocx')) || stackLines[1] || '';
+      detail += '\n\nStack: ' + relevantLine.trim();
+    }
+    alert('Fout bij het genereren: ' + detail + '\n\nControleer de console (F12) voor meer details.');
   }
 }
 
