@@ -104,6 +104,12 @@ header p { opacity: 0.8; font-size: 0.9rem; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
+/* Validatie */
+.field-error { border-color: var(--danger) !important; box-shadow: 0 0 0 2px rgba(192,57,43,0.15) !important; }
+.field-error-label { color: var(--danger) !important; }
+.validation-msg { background: #fadbd8; color: #922b21; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 0.9rem; display: none; }
+.validation-msg.show { display: block; }
+
 @media (max-width: 600px) {
   .form-grid { grid-template-columns: 1fr; }
   .form-grid.cols-3 { grid-template-columns: 1fr; }
@@ -306,9 +312,10 @@ header p { opacity: 0.8; font-size: 0.9rem; }
     </div>
   </div>
 
-  <!-- GENEREER KNOP -->
+  <!-- VALIDATIE & GENEREER KNOP -->
+  <div id="validation-msg" class="validation-msg" style="max-width:960px;margin:0 auto 16px;"></div>
   <div class="actions">
-    <button class="btn btn-success" onclick="generateDocx()" style="font-size:1.1rem; padding: 14px 40px;">
+    <button class="btn btn-success" onclick="validateAndGenerate()" style="font-size:1.1rem; padding: 14px 40px;">
       Genereer Codex (.docx)
     </button>
   </div>
@@ -478,7 +485,7 @@ function addToepassing() {
         </div>
         <div class="form-group">
           <label>Toepassing / materiaaltype</label>
-          <select class="toep-type">
+          <select class="toep-type" onchange="checkAsbestStatus(${id})">
             <option value="">-- Kies --</option>
             <optgroup label="Dakbedekking & gevelbekleding">
               <option value="Asbestcementen golfplaat">Asbestcementen golfplaat</option>
@@ -497,6 +504,7 @@ function addToepassing() {
               <option value="Zwarte lijm onder tegels">Zwarte lijm onder tegels</option>
               <option value="Calciumsilicaatplaat">Calciumsilicaatplaat</option>
               <option value="Pleisterwerk (asbesthoudend)">Pleisterwerk (asbesthoudend)</option>
+              <option value="Pleisterwerk (niet-asbesthoudend)">Pleisterwerk (niet-asbesthoudend)</option>
             </optgroup>
             <optgroup label="Isolatie & afdichting">
               <option value="Thermische leidingisolatie">Thermische leidingisolatie</option>
@@ -508,6 +516,14 @@ function addToepassing() {
               <option value="Roofing / dakbedekking">Roofing / dakbedekking</option>
               <option value="Spuitasbest">Spuitasbest</option>
               <option value="Ander">Ander (specificeer hieronder)</option>
+            </optgroup>
+            <optgroup label="Niet-asbesthoudend (controle)">
+              <option value="[NIET-ASBEST] Pleisterwerk">Pleisterwerk (niet-asbesthoudend)</option>
+              <option value="[NIET-ASBEST] Cementplaat">Cementplaat (niet-asbesthoudend)</option>
+              <option value="[NIET-ASBEST] Dakbedekking">Dakbedekking (niet-asbesthoudend)</option>
+              <option value="[NIET-ASBEST] Vloertegel">Vloertegel (niet-asbesthoudend)</option>
+              <option value="[NIET-ASBEST] Isolatie">Isolatie (niet-asbesthoudend)</option>
+              <option value="[NIET-ASBEST] Ander">Ander niet-asbesthoudend materiaal</option>
             </optgroup>
           </select>
         </div>
@@ -543,7 +559,7 @@ function addToepassing() {
           </div>
           <div class="form-group">
             <label>Asbesttype (resultaat)</label>
-            <select class="toep-asbesttype-resultaat">
+            <select class="toep-asbesttype-resultaat" onchange="checkAsbestStatus(${id})">
               <option value="Chrysotiel (wit asbest)">Chrysotiel (wit asbest)</option>
               <option value="Amosiet (bruin asbest)">Amosiet (bruin asbest)</option>
               <option value="Crocidoliet (blauw asbest)">Crocidoliet (blauw asbest)</option>
@@ -555,7 +571,7 @@ function addToepassing() {
         </div>
       </div>
 
-      <div style="margin-top:16px;">
+      <div style="margin-top:16px;" class="toep-asbest-only">
         <label style="font-weight:600;display:block;margin-bottom:8px;">OVAM Risico-parameters (materiaalscore)</label>
         <div class="form-grid cols-3">
           <div class="form-group">
@@ -608,7 +624,7 @@ function addToepassing() {
         </div>
       </div>
 
-      <div style="margin-top:16px;">
+      <div style="margin-top:16px;" class="toep-asbest-only">
         <label style="font-weight:600;display:block;margin-bottom:8px;">Bereikbaarheid & Beheer</label>
         <div class="form-grid">
           <div class="form-group">
@@ -673,6 +689,25 @@ function toggleToepassing(id) {
   body.classList.toggle('collapsed');
 }
 
+function checkAsbestStatus(id) {
+  const card = document.getElementById(`toepassing-${id}`);
+  if (!card) return;
+  const typeVal = card.querySelector('.toep-type').value;
+  const resultVal = card.querySelector('.toep-asbesttype-resultaat').value;
+  const isNietAsbest = typeVal.startsWith('[NIET-ASBEST]') || resultVal === 'Niet-asbesthoudend';
+  card.querySelectorAll('.toep-asbest-only').forEach(el => {
+    el.style.display = isNietAsbest ? 'none' : '';
+  });
+  // Update header
+  const titleEl = document.getElementById(`toepassing-title-${id}`);
+  const ref = card.querySelector('.toep-ref').value || `Toepassing ${id}`;
+  if (isNietAsbest) {
+    titleEl.innerHTML = `${ref} ${typeVal ? '— ' + typeVal.replace('[NIET-ASBEST] ', '') : ''} <span class="score-display" style="font-size:0.75rem;background:#d5f5e3;color:#1e8449;">Niet-asbesthoudend</span>`;
+  } else {
+    berekenScore(id);
+  }
+}
+
 // ============================================================
 // OVAM MATERIAALSCORE BEREKENING
 // ============================================================
@@ -704,13 +739,76 @@ function berekenScore(id) {
 }
 
 // ============================================================
+// VALIDATION
+// ============================================================
+function validateAndGenerate() {
+  // Clear previous errors
+  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+  document.querySelectorAll('.field-error-label').forEach(el => el.classList.remove('field-error-label'));
+  const msgEl = document.getElementById('validation-msg');
+  msgEl.classList.remove('show');
+
+  const errors = [];
+  function markError(el, msg) {
+    el.classList.add('field-error');
+    const label = el.closest('.form-group')?.querySelector('label');
+    if (label) label.classList.add('field-error-label');
+    errors.push(msg);
+  }
+
+  // Verplichte velden sectie 1
+  const requiredFields = [
+    { id: 'opdrachtgever_naam', label: 'Naam opdrachtgever' },
+    { id: 'opdrachtgever_adres', label: 'Adres opdrachtgever' },
+    { id: 'datum_inspectie', label: 'Datum inspectie' },
+    { id: 'datum_rapport', label: 'Datum rapport' },
+    { id: 'uitgevoerd_door', label: 'Uitgevoerd door' },
+    { id: 'erkenning_id', label: 'Erkenning persoons-ID OVAM' },
+  ];
+  requiredFields.forEach(f => {
+    const el = document.getElementById(f.id);
+    if (!el.value.trim()) markError(el, f.label);
+  });
+
+  // Verplichte velden sectie 2
+  const siteFields = [
+    { id: 'site_naam', label: 'Naam site' },
+    { id: 'site_adres', label: 'Adres site' },
+  ];
+  siteFields.forEach(f => {
+    const el = document.getElementById(f.id);
+    if (!el.value.trim()) markError(el, f.label);
+  });
+
+  // Toepassingen: referentie en type verplicht
+  document.querySelectorAll('.toepassing-card').forEach((tc, idx) => {
+    const ref = tc.querySelector('.toep-ref');
+    const type = tc.querySelector('.toep-type');
+    if (!ref.value.trim()) markError(ref, `Toepassing ${idx+1}: Referentie`);
+    if (!type.value) markError(type, `Toepassing ${idx+1}: Materiaaltype`);
+  });
+
+  if (errors.length > 0) {
+    msgEl.innerHTML = `<strong>Vul de volgende verplichte velden in:</strong><br>${errors.join(', ')}`;
+    msgEl.classList.add('show');
+    // Scroll naar eerste error
+    const firstError = document.querySelector('.field-error');
+    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  generateDocx();
+}
+
+// ============================================================
 // DOCX GENERATION
 // ============================================================
 async function generateDocx() {
+  try {
   const {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
     Header, Footer, AlignmentType, HeadingLevel, BorderStyle, WidthType,
-    ShadingType, PageBreak, PageNumber, LevelFormat
+    ShadingType, PageBreak, PageNumber
   } = docx;
 
   // Helper: base64 to Uint8Array
@@ -720,12 +818,6 @@ async function generateDocx() {
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
     return bytes;
-  }
-
-  function getImageType(dataUrl) {
-    if (dataUrl.includes('image/png')) return 'png';
-    if (dataUrl.includes('image/gif')) return 'gif';
-    return 'jpg';
   }
 
   // Collect form data
@@ -793,10 +885,8 @@ async function generateDocx() {
         alignment: AlignmentType.CENTER,
         spacing: { after: 400 },
         children: [new ImageRun({
-          type: getImageType(fileData['foto_voorblad'].data),
           data: imgBytes,
-          transformation: { width: 400, height: 300 },
-          altText: { title: "Voorblad", description: "Foto voorblad", name: "voorblad" }
+          transformation: { width: 400, height: 300 }
         })]
       }));
     } catch(e) { console.warn('Foto voorblad error', e); }
@@ -923,10 +1013,8 @@ async function generateDocx() {
     try {
       children.push(new Paragraph({ spacing: { before: 200, after: 200 }, alignment: AlignmentType.CENTER,
         children: [new ImageRun({
-          type: getImageType(fileData['foto_situering'].data),
           data: base64ToUint8(fileData['foto_situering'].data),
-          transformation: { width: 480, height: 380 },
-          altText: { title: "Situering", description: "Situering", name: "situering" }
+          transformation: { width: 480, height: 380 }
         })]
       }));
     } catch(e) { console.warn('Situering foto error', e); }
@@ -953,10 +1041,8 @@ async function generateDocx() {
       try {
         children.push(new Paragraph({ spacing: { before: 100, after: 200 }, alignment: AlignmentType.CENTER,
           children: [new ImageRun({
-            type: getImageType(fileData[`zone_foto_${zoneId}`].data),
             data: base64ToUint8(fileData[`zone_foto_${zoneId}`].data),
-            transformation: { width: 350, height: 260 },
-            altText: { title: naam, description: naam, name: `zone${zoneId}` }
+            transformation: { width: 350, height: 260 }
           })]
         }));
       } catch(e) { console.warn('Zone foto error', e); }
@@ -1053,29 +1139,33 @@ async function generateDocx() {
     const methode = tc.querySelector('.toep-methode').value;
     const staalref = tc.querySelector('.toep-staalref').value;
     const asbesttype = tc.querySelector('.toep-asbesttype-resultaat').value;
-    const gebondenheid = parseFloat(tc.querySelector('.toep-gebondenheid').value);
-    const asbestsoort = parseFloat(tc.querySelector('.toep-asbestsoort').value);
-    const afscherming = parseFloat(tc.querySelector('.toep-afscherming').value);
-    const toestand = parseFloat(tc.querySelector('.toep-toestand').value);
-    const concentratie = parseFloat(tc.querySelector('.toep-concentratie').value);
-    const bereikbaarheid = tc.querySelector('.toep-bereikbaarheid').value;
-    const verwijdering = tc.querySelector('.toep-verwijdering').value;
+    const isNietAsbest = type.startsWith('[NIET-ASBEST]') || asbesttype === 'Niet-asbesthoudend';
+    const gebondenheid = isNietAsbest ? 0 : parseFloat(tc.querySelector('.toep-gebondenheid').value);
+    const asbestsoort = isNietAsbest ? 0 : parseFloat(tc.querySelector('.toep-asbestsoort').value);
+    const afscherming = isNietAsbest ? 0 : parseFloat(tc.querySelector('.toep-afscherming').value);
+    const toestand = isNietAsbest ? 0 : parseFloat(tc.querySelector('.toep-toestand').value);
+    const concentratie = isNietAsbest ? 0 : parseFloat(tc.querySelector('.toep-concentratie').value);
+    const bereikbaarheid = isNietAsbest ? 'N.v.t.' : tc.querySelector('.toep-bereikbaarheid').value;
+    const verwijdering = isNietAsbest ? 'N.v.t.' : tc.querySelector('.toep-verwijdering').value;
     const advies = tc.querySelector('.toep-advies').value;
     const locatie = tc.querySelector('.toep-locatie').value;
 
-    const score = ((gebondenheid + asbestsoort) * afscherming * toestand) * concentratie;
-    let risico;
-    if (score < 9) risico = 'Zeer laag';
-    else if (score <= 24) risico = 'Laag';
-    else if (score <= 60) risico = 'Verhoogd';
-    else risico = 'Hoog';
+    let score = 0, risico = 'Niet-asbesthoudend';
+    if (!isNietAsbest) {
+      score = ((gebondenheid + asbestsoort) * afscherming * toestand) * concentratie;
+      if (score < 9) risico = 'Zeer laag';
+      else if (score <= 24) risico = 'Laag';
+      else if (score <= 60) risico = 'Verhoogd';
+      else risico = 'Hoog';
+    }
 
-    const gebLabel = gebondenheid === 1 ? 'Hechtgebonden' : 'Niet-hechtgebonden';
+    const gebLabel = isNietAsbest ? 'N.v.t.' : (gebondenheid === 1 ? 'Hechtgebonden' : 'Niet-hechtgebonden');
 
     const tcId = tc.id.replace('toepassing-', '');
     const fotos = fileData[`toep_fotos_${tcId}`] || [];
+    const displayType = type.replace('[NIET-ASBEST] ', '');
 
-    toepassingen.push({ ref, zone, type, hoeveelheid, methode, staalref, asbesttype, gebLabel, bereikbaarheid, score, risico, verwijdering, advies, locatie, fotos, gebondenheid, asbestsoort, afscherming, toestand, concentratie });
+    toepassingen.push({ ref, zone, type: displayType, hoeveelheid, methode, staalref, asbesttype, gebLabel, bereikbaarheid, score, risico, verwijdering, advies, locatie, fotos, gebondenheid, asbestsoort, afscherming, toestand, concentratie, isNietAsbest });
   });
 
   if (toepassingen.length > 0) {
@@ -1131,10 +1221,8 @@ async function generateDocx() {
       try {
         children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 200 },
           children: [new ImageRun({
-            type: getImageType(fileData[`plan_foto_${planId}`].data),
             data: base64ToUint8(fileData[`plan_foto_${planId}`].data),
-            transformation: { width: 500, height: 400 },
-            altText: { title: beschrijving || `Plan ${idx+1}`, description: beschrijving || "Plan", name: `plan${planId}` }
+            transformation: { width: 500, height: 400 }
           })]
         }));
       } catch(e) { console.warn('Plan foto error', e); }
@@ -1204,10 +1292,8 @@ async function generateDocx() {
         try {
           children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 60, after: 100 },
             children: [new ImageRun({
-              type: getImageType(foto.data),
               data: base64ToUint8(foto.data),
-              transformation: { width: 350, height: 260 },
-              altText: { title: `${t.ref} foto ${fi+1}`, description: `Foto ${fi+1}`, name: `toep${idx}f${fi}` }
+              transformation: { width: 350, height: 260 }
             })]
           }));
         } catch(e) { console.warn('Toepassing foto error', e); }
@@ -1361,6 +1447,11 @@ async function generateDocx() {
   const buffer = await Packer.toBlob(doc);
   const filename = `${opdrachtgeverNaam || 'Codex'} - Codex - inventaris van de asbesthoudende toepassingen.docx`;
   saveAs(buffer, filename);
+
+  } catch(err) {
+    console.error('Docx generation error:', err);
+    alert('Fout bij het genereren: ' + err.message + '\n\nControleer de console (F12) voor details.');
+  }
 }
 
 // ============================================================
