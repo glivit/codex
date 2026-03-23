@@ -457,6 +457,112 @@ function addBeperking() {
 }
 
 // ============================================================
+// FICHES DATABASE (uit OVAM-inspectieprotocol fiches)
+// ============================================================
+const FICHES_DB = [{"n":"AC wandplaten","t":"PLAAT_DAK","ta":"","d":"WAND_BUITENSCHIL","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Anti-dreun","t":"ANDERE","ta":"ontdreuningsplaat","d":"SANITAIRE_INFRASTRUCTUUR","bm":"BITUMEN_ASFALT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":""},{"n":"Asfalt","t":"ANDERE","ta":"Asfalt","d":"VERHARDING_WEGENIS","bm":"BITUMEN_ASFALT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"Staalname tot op de eventuele onderliggende lagen is niet mogelijk zonder uitbreiding naar een destructief onderzoek."},{"n":"Bakeliet schakelaars/stopcontacten","t":"TYPE_BAKELIET","ta":"","d":"COMMUNICATIE_ELEKTRISCHE_INFRASTRUCTUUR","bm":"KUNSTSTOF_OF_HARS","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Bakeliet schakelkast","t":"TYPE_BAKELIET","ta":"","d":"COMMUNICATIE_ELEKTRISCHE_INFRASTRUCTUUR","bm":"KUNSTSTOF_OF_HARS","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"ONBESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Bakeliet wc-bril","t":"TYPE_BAKELIET","ta":"","d":"ANDERE","bm":"KUNSTSTOF_OF_HARS","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"ONBESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Cementbuis","t":"BUIS_KOKER_LEIDING_PIJP_DOORVOER","ta":"","d":"SCHACHT_KOKER","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De precieze lengte is onbekend."},{"n":"Cementen smeerlaag binnen","t":"PLEISTERWERK","ta":"","d":"BINNENWAND","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"ONBESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Cementen smeerlaag buiten","t":"CREPI","ta":"","d":"WAND_BUITENSCHIL","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Coating spoelbak","t":"VERF_COATING","ta":"","d":"SANITAIRE_INFRASTRUCTUUR","bm":"ANDERE","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":""},{"n":"Crepi gevels","t":"CREPI","ta":"","d":"WAND_BUITENSCHIL","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Dak bestaande uit bitumineuze golfplaten","t":"GOLFPLAAT_DAK","ta":"","d":"SCHUIN_DAK","bm":"BITUMEN_ASFALT","o":"BUITEN","c":null,"g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Dak bestaande uit golfplaten","t":"GOLFPLAAT_DAK","ta":"","d":"SCHUIN_DAK","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Dak bestaande uit leien","t":"LEI_SHINGLE","ta":"","d":"SCHUIN_DAK","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Dakrand","t":"PLAAT_DAK","ta":"","d":"SCHUIN_DAK","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Deksteen","t":"VOL_DEKSTEEN_MUURKAP","ta":"","d":"WAND_ANDERE","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Deur varkensstal","t":"GENERIEK","ta":"","d":"ANDERE","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Dorpels type massal","t":"TYPE_MASSAL","ta":"","d":"WANDOPENING_VERTICAAL","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Elektrische meter","t":"TYPE_BAKELIET","ta":"","d":"COMMUNICATIE_ELEKTRISCHE_INFRASTRUCTUUR","bm":"KUNSTSTOF_OF_HARS","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"ONBESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Faiencetegels type Menuiserite","t":"TYPE_MENUISERITE","ta":"","d":"BINNENWAND","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Gevel met leien","t":"LEI_SHINGLE","ta":"","d":"WAND_BUITENSCHIL","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Glasal deurpaneel","t":"GEEMAILLEERD_TYPE_GLASAL","ta":"","d":"WANDOPENING_VERTICAAL","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Glasal vensterpaneel","t":"GEEMAILLEERD_TYPE_GLASAL","ta":"","d":"WANDOPENING_VERTICAAL","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Kachelkoord","t":"KOORD_LINT_BAND_STRIP","ta":"","d":"RUIMTEVERWARMING","bm":"WEINIG_OF_GEEN_BINDMIDDEL","o":"BINNEN","c":"HOOG","g":"CATEGORIE_3","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHTSTROMEN","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Koord","t":"KOORD_LINT_BAND_STRIP","ta":"","d":"HVAC_INFRASTRUCTUUR","bm":"WEINIG_OF_GEEN_BINDMIDDEL","o":"BINNEN","c":"HOOG","g":"CATEGORIE_3","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Lambrisering","t":"PLAAT_DAK","ta":"","d":"BINNENWAND","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Leidingisolatie (cement)","t":"THERMISCHE_ISOLATIE","ta":"","d":"HVAC_INFRASTRUCTUUR","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend. Rechte stukken en bochten worden waar mogelijk apart bemonsterd."},{"n":"Leidingisolatie (gips)","t":"THERMISCHE_ISOLATIE","ta":"","d":"HVAC_INFRASTRUCTUUR","bm":"GIPS_KALK","o":"BINNEN","c":"HOOG","g":"CATEGORIE_2","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend. Rechte stukken en bochten worden waar mogelijk apart bemonsterd."},{"n":"Leidingisolatie (karton)","t":"THERMISCHE_ISOLATIE","ta":"","d":"HVAC_INFRASTRUCTUUR","bm":"KARTON_PAPIER_VILTACHTIG","o":"BINNEN","c":"HOOG","g":"CATEGORIE_2","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Lijm","t":"LIJMLAAG","ta":"","d":"VLOER","bm":"LIJM","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Mastiek","t":"PAST_STOPVERF_VOEGSEL_STOPSEL","ta":"","d":"WANDOPENING_VERTICAAL","bm":"KITTEN_MASTIEK_PASTA","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Mespatroon (pakking)","t":"PAKKING_DICHTING","ta":"","d":"COMMUNICATIE_ELEKTRISCHE_INFRASTRUCTUUR","bm":"KARTON_PAPIER_VILTACHTIG","o":"BINNEN","c":"HOOG","g":"CATEGORIE_2","a":"STOOTVAST","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend. De pakkingen bevinden zich aan de kopse zijden van de meszekering."},{"n":"Nok dak","t":"NOK_WINDVEER_BOEIBOORD","ta":"","d":"SCHUIN_DAK","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Onderdak type Menuiserite","t":"TYPE_MENUISERITE","ta":"","d":"SCHUIN_DAK","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Paal voor omheining","t":"BUIS_KOKER_BEKISTING","ta":"","d":"AFBOORDING_OMHEINING","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Pakking CV-ketel","t":"PAKKING_DICHTING","ta":"","d":"ANDERE","bm":"KARTON_PAPIER_VILTACHTIG","o":"BINNEN","c":"HOOG","g":"CATEGORIE_2","a":"RANDEN_NIET_AFGESCHERMD_GEEN_CONTACT_BINNENLUCHTSTROMEN","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Pakking radiatoren","t":"PAKKING_DICHTING","ta":"","d":"RUIMTEVERWARMING","bm":"KARTON_PAPIER_VILTACHTIG","o":"BINNEN","c":"HOOG","g":"CATEGORIE_2","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHTSTROMEN","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Picalplaat liftschacht","t":"TYPE_PICAL","ta":"","d":"ANDERE","bm":"GIPS_KALK","o":"BINNEN","c":"LAAG","g":"CATEGORIE_2","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHTSTROMEN","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Plaat mesttransportband","t":"GENERIEK","ta":"","d":"ANDERE","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Plafondtegel","t":"TEGEL","ta":"","d":"PLAFOND","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Pleisterwerk gang (gemene delen)","t":"PLEISTERWERK","ta":"","d":"ANDERE","bm":"GIPS_KALK","o":"BINNEN","c":"LAAG","g":"CATEGORIE_2","a":"NIET_STOOTVAST","ts":"ONBESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend. Waar mogelijk, wordt staalname uitgevoerd conform het inspectieprotocol: bij de gemene dele"},{"n":"Pleisterwerk plafonds","t":"PLEISTERWERK","ta":"","d":"PLAFOND","bm":"GIPS_KALK","o":"BINNEN","c":"LAAG","g":"CATEGORIE_2","a":"NIET_STOOTVAST","ts":"ONBESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend. Waar mogelijk, wordt staalname uitgevoerd conform het inspectieprotocol: in een droge ruimt"},{"n":"Pleisterwerk stookruimte (gemene delen)","t":"PLEISTERWERK","ta":"","d":"ANDERE","bm":"GIPS_KALK","o":"BINNEN","c":"LAAG","g":"CATEGORIE_2","a":"NIET_STOOTVAST","ts":"ONBESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend. Waar mogelijk, wordt staalname uitgevoerd conform het inspectieprotocol: mengmonster van wa"},{"n":"Pleisterwerk traphal (gemene delen)","t":"PLEISTERWERK","ta":"","d":"BINNENWAND","bm":"GIPS_KALK","o":"BINNEN","c":"LAAG","g":"CATEGORIE_2","a":"NIET_STOOTVAST","ts":"ONBESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend. Waar mogelijk, wordt staalname uitgevoerd conform het inspectieprotocol: in een traphal aan"},{"n":"Pleisterwerk wanden","t":"PLEISTERWERK","ta":"","d":"BINNENWAND","bm":"GIPS_KALK","o":"BINNEN","c":"LAAG","g":"CATEGORIE_2","a":"NIET_STOOTVAST","ts":"ONBESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend. Waar mogelijk, wordt staalname uitgevoerd conform het inspectieprotocol: in een droge ruimt"},{"n":"Radiatorknoppen","t":"TYPE_BAKELIET","ta":"","d":"RUIMTEVERWARMING","bm":"KUNSTSTOF_OF_HARS","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHTSTROMEN","ts":"ONBESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Roetluik","t":"GENERIEK","ta":"","d":"HVAC_INFRASTRUCTUUR","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Roofing","t":"ROOFING","ta":"","d":"PLAT_DAK","bm":"BITUMEN_ASFALT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"Staalname tot op de eventuele onderliggende lagen is niet mogelijk zonder uitbreiding naar een destructief onderzoek."},{"n":"Schouw","t":"ROOKGASKANAAL","ta":"","d":"HVAC_INFRASTRUCTUUR","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Schouwhoed","t":"SCHOUWHOED_VENTILATIEKAP","ta":"","d":"SCHUIN_DAK","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Sierbeplating schouw","t":"TYPE_PICAL","ta":"","d":"RUIMTEVERWARMING","bm":"CALCIUMSILICAAT","o":"BINNEN","c":"HOOG","g":"CATEGORIE_2","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Steunpaal","t":"BUIS_KOKER_BEKISTING","ta":"","d":"VLOER","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BUITENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Trapneuzen","t":"ANDERE","ta":"Bitumineuze strip","d":"VASTE_TRAP_LADDER","bm":"BITUMEN_ASFALT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Vensterbank type massal","t":"TYPE_MASSAL","ta":"","d":"WANDOPENING_VERTICAAL","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHTSTROMEN","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Verluchtingsbuis","t":"BUIS_KOKER_LEIDING_PIJP_DOORVOER","ta":"","d":"SCHACHT_KOKER","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De precieze lengte is onbekend"},{"n":"Vinyl","t":"VLOERZEIL","ta":"","d":"VLOER","bm":"KARTON_PAPIER_VILTACHTIG","o":"BINNEN","c":"HOOG","g":"CATEGORIE_2","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Vinyltegels (lijm)","t":"LIJMLAAG","ta":"","d":"VLOER","bm":"LIJM","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Vloertegels","t":"TEGEL","ta":"","d":"VLOER","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Voederbak varkensstal","t":"BAK_RESERVOIR_KUIP_BLOEMBAK","ta":"","d":"ANDERE","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Vuilschuif / stortkoker","t":"LUIK","ta":"","d":"ANDERE","bm":"CEMENT","o":"BINNEN","c":"LAAG","g":"CATEGORIE_1","a":null,"ts":null,"eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Wanden bestaande uit golfplaten","t":"GOLFPLAAT_DAK","ta":"","d":"WAND_BUITENSCHIL","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Wandzeil/behang","t":"BEHANG","ta":"","d":"BINNENWAND","bm":"KARTON_PAPIER_VILTACHTIG","o":"BINNEN","c":"HOOG","g":"CATEGORIE_2","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"WEINIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."},{"n":"Zijwanden type Menuiserite","t":"TYPE_MENUISERITE","ta":"","d":"WAND_BUITENSCHIL","bm":"CEMENT","o":"BUITEN","c":"LAAG","g":"CATEGORIE_1","a":"ZIJDEN_VRIJ_CONTACT_BINNENLUCHT","ts":"MATIG_BESCHADIGD","eb":true,"nt":"De hoeveelheid is een zo nauwkeurig mogelijke opmeting. Hieraan kunnen evenwel geen rechten worden ontleend."}];
+
+// Mapping van OVAM enum waarden naar formulier-waarden
+const OVAM_GEB = { 'CATEGORIE_1': '1', 'CATEGORIE_2': '2', 'CATEGORIE_3': '3' };
+const OVAM_AFSCH = {
+  'STOOTVAST': '0.5',
+  'NIET_STOOTVAST': '1.2',
+  'RANDEN_NIET_AFGESCHERMD_GEEN_CONTACT_BINNENLUCHTSTROMEN': '1.2',
+  'ZIJDEN_VRIJ_CONTACT_BUITENLUCHT': '2.5',
+  'ZIJDEN_VRIJ_CONTACT_BINNENLUCHT': '4',
+  'ZIJDEN_VRIJ_CONTACT_BINNENLUCHTSTROMEN': '6'
+};
+const OVAM_TOEST = { 'ONBESCHADIGD': '1', 'WEINIG_BESCHADIGD': '2', 'MATIG_BESCHADIGD': '5', 'ZWAAR_BESCHADIGD': '10' };
+const OVAM_CONC = { 'LAAG': '1', 'HOOG': '1.6' };
+
+// Naam-mapping voor dropdown
+const OVAM_TOEP_NAAM = {
+  'GOLFPLAAT_DAK': 'Asbestcementen golfplaat', 'LEI_SHINGLE': 'Asbestcementen lei/shingle',
+  'PLAAT_DAK': 'Asbestcementen plaat (vlak)', 'NOK_WINDVEER_BOEIBOORD': 'Nok / windveer / boeiboord',
+  'BUIS_KOKER_LEIDING_PIJP_DOORVOER': 'Buis / leiding / pijp', 'BUIS_KOKER_BEKISTING': 'Buis / koker / bekisting',
+  'ROOKGASKANAAL': 'Rookgaskanaal', 'SCHOUWHOED_VENTILATIEKAP': 'Schouwhoed / ventilatiekap',
+  'TEGEL': 'Vloertegel', 'VLOERZEIL': 'Vloerzeil / vinyl',
+  'LIJMLAAG': 'Lijmlaag', 'PLEISTERWERK': 'Pleisterwerk', 'CREPI': 'Crépi',
+  'THERMISCHE_ISOLATIE': 'Thermische leidingisolatie',
+  'KOORD_LINT_BAND_STRIP': 'Koord / lint / band',
+  'PAKKING_DICHTING': 'Pakking / dichting',
+  'PAST_STOPVERF_VOEGSEL_STOPSEL': 'Stopverf / mastiek',
+  'ROOFING': 'Roofing', 'BEHANG': 'Wandzeil / behang',
+  'TYPE_BAKELIET': 'Bakeliet', 'TYPE_MASSAL': 'Massal',
+  'TYPE_MENUISERITE': 'Menuiserite', 'TYPE_PICAL': 'Pical',
+  'GEEMAILLEERD_TYPE_GLASAL': 'Glasal', 'LUIK': 'Luik',
+  'BAK_RESERVOIR_KUIP_BLOEMBAK': 'Bak / reservoir / bloembak',
+  'VOL_DEKSTEEN_MUURKAP': 'Deksteen / muurkap',
+  'VERF_COATING': 'Verf / coating',
+  'ANDERE': 'Ander', 'GENERIEK': 'Generiek'
+};
+
+function applyFiche(id) {
+  const card = document.getElementById('toepassing-' + id);
+  if (!card) return;
+  const ficheSelect = card.querySelector('.toep-fiche');
+  if (!ficheSelect) return;
+  const ficheNaam = ficheSelect.value;
+  if (!ficheNaam) return;
+
+  const fiche = FICHES_DB.find(f => f.n === ficheNaam);
+  if (!fiche) return;
+
+  // Materiaaltype invullen
+  const typeNaam = OVAM_TOEP_NAAM[fiche.t] || fiche.t;
+  const typeSelect = card.querySelector('.toep-type');
+  if (typeSelect) {
+    // Zoek match in dropdown, anders zet op "Ander"
+    let matched = false;
+    for (const opt of typeSelect.options) {
+      if (opt.value === typeNaam || opt.textContent === typeNaam) {
+        typeSelect.value = opt.value; matched = true; break;
+      }
+    }
+    if (!matched) {
+      typeSelect.value = 'Ander';
+      const anderInput = card.querySelector('.toep-type-ander');
+      if (anderInput) anderInput.value = fiche.ta || typeNaam;
+    }
+  }
+
+  // OVAM parameters auto-invullen
+  const gebSel = card.querySelector('.toep-gebondenheid');
+  if (gebSel && OVAM_GEB[fiche.g]) gebSel.value = OVAM_GEB[fiche.g];
+
+  const afschSel = card.querySelector('.toep-afscherming');
+  if (afschSel && OVAM_AFSCH[fiche.a]) afschSel.value = OVAM_AFSCH[fiche.a];
+
+  const toestSel = card.querySelector('.toep-toestand');
+  if (toestSel && OVAM_TOEST[fiche.ts]) toestSel.value = OVAM_TOEST[fiche.ts];
+
+  const concSel = card.querySelector('.toep-concentratie');
+  if (concSel && OVAM_CONC[fiche.c]) concSel.value = OVAM_CONC[fiche.c];
+
+  // Bereikbaarheid
+  const bereikSel = card.querySelector('.toep-bereikbaarheid');
+  if (bereikSel) bereikSel.value = fiche.eb ? 'EB' : 'NEB';
+
+  // Notitie als advies
+  if (fiche.nt) {
+    const adviesEl = card.querySelector('.toep-advies');
+    if (adviesEl && !adviesEl.value) adviesEl.value = fiche.nt;
+  }
+
+  // Toon asbest-secties (fiche = vermoedelijk asbesthoudend)
+  card.querySelectorAll('.toep-asbest-only').forEach(el => el.style.display = '');
+
+  // Herbereken score en update titel
+  berekenScore(id);
+
+  // Flash effect op auto-ingevulde velden
+  card.querySelectorAll('.toep-gebondenheid, .toep-afscherming, .toep-toestand, .toep-concentratie, .toep-bereikbaarheid, .toep-type').forEach(el => {
+    el.style.transition = 'background 0.3s';
+    el.style.background = '#d5f5e3';
+    setTimeout(() => el.style.background = '', 800);
+  });
+}
+
+// ============================================================
 // ASBESTTOEPASSINGEN
 // ============================================================
 function addToepassing() {
@@ -465,6 +571,13 @@ function addToepassing() {
   const div = document.createElement('div');
   div.className = 'toepassing-card';
   div.id = `toepassing-${id}`;
+
+  // Bouw fiche-opties
+  let ficheOptions = '<option value="">-- Kies een fiche (optioneel) --</option>';
+  FICHES_DB.forEach(f => {
+    ficheOptions += `<option value="${f.n}">${f.n}</option>`;
+  });
+
   div.innerHTML = `
     <div class="toepassing-header" onclick="toggleToepassing(${id})">
       <h4 id="toepassing-title-${id}">Toepassing ${id} — <span class="score-display score-cat1">Vul parameters in</span></h4>
@@ -474,6 +587,18 @@ function addToepassing() {
       </div>
     </div>
     <div class="toepassing-body" id="toepassing-body-${id}">
+
+      <div style="background:#e8f4fd;border:1px solid #bee5eb;border-radius:6px;padding:12px;margin-bottom:16px;">
+        <label style="font-weight:600;display:block;margin-bottom:6px;color:var(--primary);">Snel invullen vanuit fiche-database</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select class="toep-fiche" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.9rem;font-family:inherit;">
+            ${ficheOptions}
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="applyFiche(${id})" type="button">Toepassen</button>
+        </div>
+        <span style="font-size:0.75rem;color:var(--text-light);margin-top:4px;display:block;">Selecteer een fiche om risico-parameters automatisch in te vullen. Pas daarna zone, staal en resultaat aan.</span>
+      </div>
+
       <div class="form-grid">
         <div class="form-group">
           <label>Referentie</label>
@@ -494,27 +619,38 @@ function addToepassing() {
               <option value="Nok / windveer / boeiboord">Nok / windveer / boeiboord</option>
             </optgroup>
             <optgroup label="Leidingen & afvoer">
-              <option value="Dakgoot (asbestcement)">Dakgoot (asbestcement)</option>
-              <option value="Hemelwaterafvoerkanaal">Hemelwaterafvoerkanaal</option>
+              <option value="Buis / leiding / pijp">Buis / leiding / pijp</option>
+              <option value="Buis / koker / bekisting">Buis / koker / bekisting</option>
               <option value="Rookgaskanaal">Rookgaskanaal</option>
               <option value="Schouwhoed / ventilatiekap">Schouwhoed / ventilatiekap</option>
             </optgroup>
             <optgroup label="Vloeren & wanden">
-              <option value="Vinylvloertegel (met asbest)">Vinylvloertegel (met asbest)</option>
-              <option value="Zwarte lijm onder tegels">Zwarte lijm onder tegels</option>
-              <option value="Calciumsilicaatplaat">Calciumsilicaatplaat</option>
-              <option value="Pleisterwerk (asbesthoudend)">Pleisterwerk (asbesthoudend)</option>
-              <option value="Pleisterwerk (niet-asbesthoudend)">Pleisterwerk (niet-asbesthoudend)</option>
+              <option value="Vloertegel">Vloertegel</option>
+              <option value="Vloerzeil / vinyl">Vloerzeil / vinyl</option>
+              <option value="Lijmlaag">Lijmlaag</option>
+              <option value="Pleisterwerk">Pleisterwerk</option>
+              <option value="Crépi">Crépi</option>
             </optgroup>
             <optgroup label="Isolatie & afdichting">
               <option value="Thermische leidingisolatie">Thermische leidingisolatie</option>
-              <option value="Brandwerend board">Brandwerend board</option>
-              <option value="Pakking / koord">Pakking / koord</option>
-              <option value="Mastiek / kit">Mastiek / kit</option>
+              <option value="Koord / lint / band">Koord / lint / band</option>
+              <option value="Pakking / dichting">Pakking / dichting</option>
+              <option value="Stopverf / mastiek">Stopverf / mastiek</option>
+            </optgroup>
+            <optgroup label="Platen & panelen">
+              <option value="Bakeliet">Bakeliet</option>
+              <option value="Massal">Massal</option>
+              <option value="Menuiserite">Menuiserite</option>
+              <option value="Pical">Pical</option>
+              <option value="Glasal">Glasal</option>
             </optgroup>
             <optgroup label="Overige">
-              <option value="Roofing / dakbedekking">Roofing / dakbedekking</option>
-              <option value="Spuitasbest">Spuitasbest</option>
+              <option value="Roofing">Roofing</option>
+              <option value="Wandzeil / behang">Wandzeil / behang</option>
+              <option value="Verf / coating">Verf / coating</option>
+              <option value="Deksteen / muurkap">Deksteen / muurkap</option>
+              <option value="Bak / reservoir / bloembak">Bak / reservoir / bloembak</option>
+              <option value="Luik">Luik</option>
               <option value="Ander">Ander (specificeer hieronder)</option>
             </optgroup>
             <optgroup label="Niet-asbesthoudend (controle)">
@@ -542,7 +678,7 @@ function addToepassing() {
       </div>
 
       <div style="margin-top:16px;">
-        <label style="font-weight:600;display:block;margin-bottom:8px;">Identificatiemethode</label>
+        <label style="font-weight:600;display:block;margin-bottom:8px;">Identificatiemethode & resultaat</label>
         <div class="form-grid cols-3">
           <div class="form-group">
             <label>Methode</label>
