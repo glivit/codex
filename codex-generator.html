@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex Asbestinventaris Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+:root {
+  --primary: #1a5276;
+  --primary-light: #2980b9;
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --border: #dce1e8;
+  --text: #2c3e50;
+  --text-light: #7f8c8d;
+  --danger: #c0392b;
+  --success: #27ae60;
+  --warning: #f39c12;
+  --radius: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+.container { max-width: 960px; margin: 0 auto; padding: 20px; }
+
+header { background: var(--primary); color: white; padding: 24px 0; margin-bottom: 24px; }
+header .container { display: flex; align-items: center; gap: 16px; }
+header h1 { font-size: 1.5rem; font-weight: 600; }
+header p { opacity: 0.8; font-size: 0.9rem; }
+
+.section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+.section-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--primary-light); }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.form-group .hint { font-size: 0.75rem; color: var(--text-light); }
+.form-group input, .form-group select, .form-group textarea {
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 0.9rem; font-family: inherit; transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(41,128,185,0.1);
+}
+.form-group textarea { resize: vertical; min-height: 80px; }
+
+.file-upload { border: 2px dashed var(--border); border-radius: 6px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+.file-upload:hover { border-color: var(--primary-light); background: rgba(41,128,185,0.03); }
+.file-upload input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.file-upload .preview { margin-top: 8px; }
+.file-upload .preview img { max-width: 200px; max-height: 150px; border-radius: 4px; }
+
+/* Asbesttoepassingen */
+.toepassing-card { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; }
+.toepassing-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f0f4f8; cursor: pointer; }
+.toepassing-header h4 { font-size: 0.95rem; color: var(--primary); }
+.toepassing-body { padding: 16px; display: block; }
+.toepassing-body.collapsed { display: none; }
+
+.score-display { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; }
+.score-cat1 { background: #d5f5e3; color: #1e8449; }
+.score-cat2 { background: #d4efdf; color: #196f3d; }
+.score-cat3 { background: #fdebd0; color: #b9770e; }
+.score-cat4 { background: #fadbd8; color: #922b21; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-light); }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { background: #2ecc71; }
+.btn-danger { background: var(--danger); color: white; font-size: 0.8rem; padding: 6px 12px; }
+.btn-danger:hover { background: #e74c3c; }
+.btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+.btn-outline:hover { background: var(--primary); color: white; }
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+.actions { display: flex; gap: 12px; justify-content: center; padding: 24px 0; flex-wrap: wrap; }
+
+/* Zone cards */
+.zone-card { border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 8px; }
+.zone-card .form-grid { gap: 8px; }
+
+.remove-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; padding: 4px; }
+
+/* Plan items */
+.plan-item { display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; }
+.plan-item .preview img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
+.plan-item input[type="text"] { flex: 1; }
+
+/* Progress indicator */
+.progress-bar { display: flex; gap: 4px; margin-bottom: 24px; }
+.progress-step { flex: 1; height: 4px; border-radius: 2px; background: var(--border); }
+.progress-step.active { background: var(--primary-light); }
+.progress-step.done { background: var(--success); }
+
+/* Tabs */
+.tab-nav { display: flex; gap: 2px; margin-bottom: 0; border-bottom: 2px solid var(--border); }
+.tab-btn { padding: 10px 20px; border: none; background: transparent; font-size: 0.9rem; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: var(--text-light); font-family: inherit; }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+@media (max-width: 600px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid.cols-3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div>
+      <h1>Codex Asbestinventaris Generator</h1>
+      <p>Genereer professionele codex-documenten conform de Codex Welzijn op het Werk</p>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- SECTIE 1: Opdrachtgever & Algemeen -->
+  <div class="section">
+    <div class="section-title">1. Opdrachtgever & Administratieve Gegevens</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Naam opdrachtgever / bedrijf</label>
+        <input type="text" id="opdrachtgever_naam" placeholder="Tegels Depaepe NV">
+      </div>
+      <div class="form-group">
+        <label>Contactpersoon ter plaatse</label>
+        <input type="text" id="contactpersoon" placeholder="Dhr. Lieven Stragier">
+      </div>
+      <div class="form-group full">
+        <label>Adres opdrachtgever</label>
+        <input type="text" id="opdrachtgever_adres" placeholder="Kortrijksestraat 368, 8560 Wevelgem">
+      </div>
+      <div class="form-group">
+        <label>Referentie / dossiernummer</label>
+        <input type="text" id="referentie" placeholder="Ref. Depaepe NV">
+      </div>
+      <div class="form-group">
+        <label>Datum inspectie(s)</label>
+        <input type="date" id="datum_inspectie">
+      </div>
+      <div class="form-group">
+        <label>Datum rapport</label>
+        <input type="date" id="datum_rapport">
+      </div>
+      <div class="form-group">
+        <label>Uitgevoerd door (ADI)</label>
+        <input type="text" id="uitgevoerd_door" placeholder="ADI Vincent Vandeputte">
+      </div>
+      <div class="form-group">
+        <label>Erkenning persoons-ID OVAM</label>
+        <input type="text" id="erkenning_id" placeholder="9432YZ3M">
+      </div>
+      <div class="form-group">
+        <label>Foto voorblad</label>
+        <div class="file-upload">
+          <span>Klik of sleep een foto hierheen</span>
+          <input type="file" id="foto_voorblad" accept="image/*">
+          <div class="preview" id="preview_voorblad"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTIE 2: Situering -->
+  <div class="section">
+    <div class="section-title">2. Beschrijving & Situering van de Gebouwen</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Naam site / constructie</label>
+        <input type="text" id="site_naam" placeholder="Tegels Depaepe NV">
+      </div>
+      <div class="form-group">
+        <label>Adres site</label>
+        <input type="text" id="site_adres" placeholder="Kortrijkstraat 368, 8560 Wevelgem">
+      </div>
+      <div class="form-group">
+        <label>Bouwjaar (oudste gedeelte)</label>
+        <input type="text" id="bouwjaar" placeholder="1986">
+      </div>
+      <div class="form-group">
+        <label>Gebruik</label>
+        <input type="text" id="gebruik" placeholder="showroom en groothandel van keramische tegels">
+      </div>
+      <div class="form-group full">
+        <label>Omschrijving opdracht</label>
+        <textarea id="omschrijving_opdracht" placeholder="Het opstellen van een asbestinventaris in het kader van het normale gebruik van de gebouwen, met beoordeling van het blootstellingsrisico en opmaak van een beheersprogramma voor de gebouwen gelegen te..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Situering / overzichtsfoto</label>
+        <div class="file-upload">
+          <span>Klik of sleep de situatiefoto hierheen</span>
+          <input type="file" id="foto_situering" accept="image/*">
+          <div class="preview" id="preview_situering"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zones -->
+    <div style="margin-top: 16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <label style="font-weight:600;">Zones / Blokken</label>
+        <button class="btn btn-outline btn-sm" onclick="addZone()">+ Zone toevoegen</button>
+      </div>
+      <div id="zones-container"></div>
+    </div>
+  </div>
+
+  <!-- SECTIE 3: Plannen -->
+  <div class="section">
+    <div class="section-title">3. Plannen</div>
+    <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:12px;">Upload plattegronden en constructieplannen van de gebouwen.</p>
+    <div id="plannen-container"></div>
+    <button class="btn btn-outline btn-sm" onclick="addPlan()" style="margin-top:8px;">+ Plan toevoegen</button>
+  </div>
+
+  <!-- SECTIE 4: Asbesttoepassingen -->
+  <div class="section">
+    <div class="section-title">4. Inventaris Asbesthoudende Materialen</div>
+    <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:16px;">
+      Voeg per asbesttoepassing een fiche toe. De materiaalscore wordt automatisch berekend conform het OVAM-inspectieprotocol.
+    </p>
+    <div id="toepassingen-container"></div>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="btn btn-outline" onclick="addToepassing()">+ Asbesttoepassing toevoegen</button>
+    </div>
+  </div>
+
+  <!-- SECTIE 5: Niet-asbestverdachte zones -->
+  <div class="section">
+    <div class="section-title">5. Niet-asbestverdachte Materialen & Zones</div>
+    <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:12px;">Beschrijf per categorie de niet-asbestverdachte materialen (optioneel).</p>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Dak- en plafondafwerking</label>
+        <textarea id="niet_asbest_dak" placeholder="De dak- en plafondconstructie bestaat uit metalen sandwichpanelen met geïsoleerde kern..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Dragende structuur</label>
+        <textarea id="niet_asbest_structuur" placeholder="De draagstructuur bestaat uit stalen liggers en spanten..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Wanden en gevels</label>
+        <textarea id="niet_asbest_wanden" placeholder="De binnen- en buitenwanden zijn uitgevoerd in prefab betonnen wandpanelen..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Vloeren en overige vaste elementen</label>
+        <textarea id="niet_asbest_vloeren" placeholder="De vloeren bestaan uit industrieel beton..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTIE 6: Beperkingen -->
+  <div class="section">
+    <div class="section-title">6. Beperkingen van het Onderzoek</div>
+    <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:12px;">
+      Standaardbeperkingen worden automatisch opgenomen. Voeg hieronder specifieke beperkingen toe of verwijder standaard-items die niet van toepassing zijn.
+    </p>
+
+    <label style="font-weight:600; display:block; margin-bottom:8px;">Standaardbeperkingen (aan/uit)</label>
+    <div id="standaard-beperkingen">
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:normal;font-size:0.9rem;">
+        <input type="checkbox" class="std-beperking" checked value="Deze inventaris heeft enkel betrekking op de zichtbare en bereikbare delen van de gebouwen.">
+        Enkel zichtbare en bereikbare delen
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:normal;font-size:0.9rem;">
+        <input type="checkbox" class="std-beperking" checked value="Volgens de wet mogen intacte materialen, die in normale omstandigheden niet beroerd worden, niet worden beschadigd om er een monster van te nemen.">
+        Intacte materialen niet beschadigd voor monstername
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:normal;font-size:0.9rem;">
+        <input type="checkbox" class="std-beperking" checked value="Er werden géén monsters genomen van materialen die enkel door slopen van een beschermende laag bereikbaar zijn, noch van onderdelen van installaties die niet van buitenaf bereikbaar zijn.">
+        Geen monsters achter beschermende lagen / installaties
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:normal;font-size:0.9rem;">
+        <input type="checkbox" class="std-beperking-item" checked value="Ingesloten materialen (achter muren, vloeren, vaste plafonds)">
+        Niet onderzocht: ingesloten materialen
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:normal;font-size:0.9rem;">
+        <input type="checkbox" class="std-beperking-item" checked value="Funderingen en ondergrondse leidingen">
+        Niet onderzocht: funderingen en ondergrondse leidingen
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:normal;font-size:0.9rem;">
+        <input type="checkbox" class="std-beperking-item" checked value="Installaties zonder veilige toegang">
+        Niet onderzocht: installaties zonder veilige toegang
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:normal;font-size:0.9rem;">
+        <input type="checkbox" class="std-beperking-item" checked value="Niet-toegankelijke ruimtes tijdens de inspectie">
+        Niet onderzocht: niet-toegankelijke ruimtes
+      </label>
+    </div>
+
+    <div style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <label style="font-weight:600;">Extra beperkingen</label>
+        <button class="btn btn-outline btn-sm" onclick="addBeperking()">+ Beperking toevoegen</button>
+      </div>
+      <div id="beperkingen-container"></div>
+    </div>
+  </div>
+
+  <!-- GENEREER KNOP -->
+  <div class="actions">
+    <button class="btn btn-success" onclick="generateDocx()" style="font-size:1.1rem; padding: 14px 40px;">
+      Genereer Codex (.docx)
+    </button>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let zoneCount = 0;
+let planCount = 0;
+let toepassingCount = 0;
+const fileData = {}; // store file data as base64
+
+// ============================================================
+// FILE HANDLING
+// ============================================================
+function handleFileInput(inputId, previewId) {
+  const input = document.getElementById(inputId);
+  input.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      fileData[inputId] = { data: ev.target.result, name: file.name, type: file.type };
+      const prev = document.getElementById(previewId);
+      if (prev) prev.innerHTML = `<img src="${ev.target.result}" alt="preview">`;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function setupDynamicFileInput(input, previewEl, storeKey) {
+  input.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      fileData[storeKey] = { data: ev.target.result, name: file.name, type: file.type };
+      if (previewEl) previewEl.innerHTML = `<img src="${ev.target.result}" alt="preview">`;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ============================================================
+// ZONES
+// ============================================================
+function removeZone(id) {
+  const el = document.getElementById(`zone-${id}`);
+  if (el) el.remove();
+  delete fileData[`zone_foto_${id}`];
+}
+
+function addZone() {
+  zoneCount++;
+  const id = zoneCount;
+  const div = document.createElement('div');
+  div.className = 'zone-card';
+  div.id = `zone-${id}`;
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <strong>Zone ${id}</strong>
+      <button class="remove-btn" onclick="removeZone(${id})" title="Zone verwijderen">&times;</button>
+    </div>
+    <div class="form-grid cols-3">
+      <div class="form-group">
+        <label>Naam zone/blok</label>
+        <input type="text" class="zone-naam" placeholder="Zone A: showroom + burelen">
+      </div>
+      <div class="form-group">
+        <label>Bouwjaar</label>
+        <input type="text" class="zone-bouwjaar" placeholder="1986">
+      </div>
+      <div class="form-group">
+        <label>Opmerkingen</label>
+        <input type="text" class="zone-opmerking" placeholder="vernieuwd in 2018">
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:8px;">
+      <label>Foto zone</label>
+      <div class="file-upload">
+        <span>Klik of sleep foto</span>
+        <input type="file" class="zone-foto" accept="image/*">
+        <div class="preview zone-foto-preview"></div>
+      </div>
+    </div>
+  `;
+  document.getElementById('zones-container').appendChild(div);
+
+  const fileInput = div.querySelector('.zone-foto');
+  const preview = div.querySelector('.zone-foto-preview');
+  setupDynamicFileInput(fileInput, preview, `zone_foto_${id}`);
+}
+
+// ============================================================
+// PLANNEN
+// ============================================================
+function addPlan() {
+  planCount++;
+  const id = planCount;
+  const div = document.createElement('div');
+  div.className = 'plan-item';
+  div.id = `plan-${id}`;
+  div.innerHTML = `
+    <div class="file-upload" style="min-width:120px;padding:8px;">
+      <span style="font-size:0.75rem;">Upload plan</span>
+      <input type="file" class="plan-file" accept="image/*">
+      <div class="preview plan-preview"></div>
+    </div>
+    <input type="text" class="plan-beschrijving" placeholder="Beschrijving plan (bv. Grondplan gelijkvloers)" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;">
+    <button class="remove-btn" onclick="this.closest('.plan-item').remove()">&times;</button>
+  `;
+  document.getElementById('plannen-container').appendChild(div);
+
+  const fileInput = div.querySelector('.plan-file');
+  const preview = div.querySelector('.plan-preview');
+  setupDynamicFileInput(fileInput, preview, `plan_foto_${id}`);
+}
+
+// ============================================================
+// BEPERKINGEN
+// ============================================================
+let beperkingCount = 0;
+function addBeperking() {
+  beperkingCount++;
+  const id = beperkingCount;
+  const div = document.createElement('div');
+  div.className = 'zone-card';
+  div.id = `beperking-${id}`;
+  div.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" class="beperking-tekst" placeholder="Beschrijf de beperking..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.9rem;font-family:inherit;">
+      <button class="remove-btn" onclick="document.getElementById('beperking-${id}').remove()" title="Beperking verwijderen">&times;</button>
+    </div>
+  `;
+  document.getElementById('beperkingen-container').appendChild(div);
+}
+
+// ============================================================
+// ASBESTTOEPASSINGEN
+// ============================================================
+function addToepassing() {
+  toepassingCount++;
+  const id = toepassingCount;
+  const div = document.createElement('div');
+  div.className = 'toepassing-card';
+  div.id = `toepassing-${id}`;
+  div.innerHTML = `
+    <div class="toepassing-header" onclick="toggleToepassing(${id})">
+      <h4 id="toepassing-title-${id}">Toepassing ${id} — <span class="score-display score-cat1">Vul parameters in</span></h4>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span style="font-size:0.8rem;color:var(--text-light);" id="toep-score-${id}"></span>
+        <button class="btn-danger btn-sm" onclick="event.stopPropagation();document.getElementById('toepassing-${id}').remove()">Verwijder</button>
+      </div>
+    </div>
+    <div class="toepassing-body" id="toepassing-body-${id}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Referentie</label>
+          <input type="text" class="toep-ref" placeholder="A-01">
+        </div>
+        <div class="form-group">
+          <label>Gebouw / Zone / Lokaal</label>
+          <input type="text" class="toep-zone" placeholder="Technisch lokaal - Zone A">
+        </div>
+        <div class="form-group">
+          <label>Toepassing / materiaaltype</label>
+          <select class="toep-type">
+            <option value="">-- Kies --</option>
+            <optgroup label="Dakbedekking & gevelbekleding">
+              <option value="Asbestcementen golfplaat">Asbestcementen golfplaat</option>
+              <option value="Asbestcementen lei/shingle">Asbestcementen lei/shingle</option>
+              <option value="Asbestcementen plaat (vlak)">Asbestcementen plaat (vlak)</option>
+              <option value="Nok / windveer / boeiboord">Nok / windveer / boeiboord</option>
+            </optgroup>
+            <optgroup label="Leidingen & afvoer">
+              <option value="Dakgoot (asbestcement)">Dakgoot (asbestcement)</option>
+              <option value="Hemelwaterafvoerkanaal">Hemelwaterafvoerkanaal</option>
+              <option value="Rookgaskanaal">Rookgaskanaal</option>
+              <option value="Schouwhoed / ventilatiekap">Schouwhoed / ventilatiekap</option>
+            </optgroup>
+            <optgroup label="Vloeren & wanden">
+              <option value="Vinylvloertegel (met asbest)">Vinylvloertegel (met asbest)</option>
+              <option value="Zwarte lijm onder tegels">Zwarte lijm onder tegels</option>
+              <option value="Calciumsilicaatplaat">Calciumsilicaatplaat</option>
+              <option value="Pleisterwerk (asbesthoudend)">Pleisterwerk (asbesthoudend)</option>
+            </optgroup>
+            <optgroup label="Isolatie & afdichting">
+              <option value="Thermische leidingisolatie">Thermische leidingisolatie</option>
+              <option value="Brandwerend board">Brandwerend board</option>
+              <option value="Pakking / koord">Pakking / koord</option>
+              <option value="Mastiek / kit">Mastiek / kit</option>
+            </optgroup>
+            <optgroup label="Overige">
+              <option value="Roofing / dakbedekking">Roofing / dakbedekking</option>
+              <option value="Spuitasbest">Spuitasbest</option>
+              <option value="Ander">Ander (specificeer hieronder)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Specificatie (als "Ander")</label>
+          <input type="text" class="toep-type-ander" placeholder="Optioneel: specificeer materiaaltype">
+        </div>
+        <div class="form-group">
+          <label>Hoeveelheid (indicatief)</label>
+          <input type="text" class="toep-hoeveelheid" placeholder="±40 m²">
+        </div>
+        <div class="form-group">
+          <label>Locatiebeschrijving</label>
+          <input type="text" class="toep-locatie" placeholder="Dakconstructie technisch lokaal">
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <label style="font-weight:600;display:block;margin-bottom:8px;">Identificatiemethode</label>
+        <div class="form-grid cols-3">
+          <div class="form-group">
+            <label>Methode</label>
+            <select class="toep-methode">
+              <option value="Visueel (zonder monster)">Visueel — zonder monster (ZM)</option>
+              <option value="Staalname + laboanalyse">Staalname + laboanalyse</option>
+              <option value="Kleefmonster">Kleefmonster</option>
+              <option value="Bewijsdocument">Bewijsdocument / bestaande analyse</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Referentie staalname</label>
+            <input type="text" class="toep-staalref" placeholder="M-01 (leeg als ZM)">
+          </div>
+          <div class="form-group">
+            <label>Asbesttype (resultaat)</label>
+            <select class="toep-asbesttype-resultaat">
+              <option value="Chrysotiel (wit asbest)">Chrysotiel (wit asbest)</option>
+              <option value="Amosiet (bruin asbest)">Amosiet (bruin asbest)</option>
+              <option value="Crocidoliet (blauw asbest)">Crocidoliet (blauw asbest)</option>
+              <option value="Chrysotiel + Amosiet">Chrysotiel + Amosiet</option>
+              <option value="Niet-asbesthoudend">Niet-asbesthoudend (controle)</option>
+              <option value="Niet geanalyseerd (ZM)">Niet geanalyseerd (ZM)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <label style="font-weight:600;display:block;margin-bottom:8px;">OVAM Risico-parameters (materiaalscore)</label>
+        <div class="form-grid cols-3">
+          <div class="form-group">
+            <label>A. Gebondenheid</label>
+            <select class="toep-gebondenheid" onchange="berekenScore(${id})">
+              <option value="1">Cat. 1: Hechtgebonden (cement, bitumen, kunststof, lijm)</option>
+              <option value="2">Cat. 2: Niet-hechtgebonden met matrix (gips, kalk, karton)</option>
+              <option value="3">Cat. 3: Niet-hechtgebonden weinig/geen matrix (spuit, textiel)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>B. Asbestsoort</label>
+            <select class="toep-asbestsoort" onchange="berekenScore(${id})">
+              <option value="1">Alleen chrysotiel</option>
+              <option value="2">Amfibool (excl. crocidoliet)</option>
+              <option value="3">Crocidoliet aanwezig</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>C. Afschermingsgraad</label>
+            <select class="toep-afscherming" onchange="berekenScore(${id})">
+              <option value="0.5">Stootvaste afscherming of omkasting</option>
+              <option value="1.2">Niet-stootvaste afscherming</option>
+              <option value="1.2">Alleen randen niet afgeschermd (geen binnenluchtstromen)</option>
+              <option value="2.5">Geheel/deels vrij buitenlucht, geen contact binnenlucht</option>
+              <option value="4">Geheel/deels vrij binnenlucht, geen binnenluchtstromen</option>
+              <option value="6">Geheel/deels vrij aan binnenluchtstromen</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>D. Toestand materiaal</label>
+            <select class="toep-toestand" onchange="berekenScore(${id})">
+              <option value="1">Onbeschadigd, niet verweerd</option>
+              <option value="2">Licht beschadigd, licht verweerd</option>
+              <option value="5">Matig beschadigd, matig verweerd</option>
+              <option value="10">Zwaar beschadigd, zwaar verweerd</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>E. Asbestconcentratie</label>
+            <select class="toep-concentratie" onchange="berekenScore(${id})">
+              <option value="1">Laag (&lt;50%)</option>
+              <option value="1.6">Hoog (≥50%)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Materiaalscore</label>
+            <div id="score-result-${id}" class="score-display score-cat1" style="margin-top:4px;">— berekenen —</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <label style="font-weight:600;display:block;margin-bottom:8px;">Bereikbaarheid & Beheer</label>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Bereikbaarheid</label>
+            <select class="toep-bereikbaarheid">
+              <option value="EB">Eenvoudig bereikbaar (EB)</option>
+              <option value="NEB">Niet eenvoudig bereikbaar (NEB)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Aanbevolen verwijderingsmethode</label>
+            <select class="toep-verwijdering">
+              <option value="Beheer in situ (periodieke controle)">Beheer in situ (periodieke controle)</option>
+              <option value="Fixeren of inkapselen">Fixeren of inkapselen</option>
+              <option value="Eenvoudige handelingen">Verwijdering via eenvoudige handelingen</option>
+              <option value="Erkend asbestverwijderaar">Verwijdering door erkend asbestverwijderaar</option>
+              <option value="Hermetische zone">Verwijdering in hermetische zone</option>
+              <option value="Couveusezakmethode">Couveusezakmethode</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Toelichting / beheersadvies</label>
+            <textarea class="toep-advies" placeholder="Beschrijf het specifieke advies voor deze toepassing..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <label style="font-weight:600;display:block;margin-bottom:8px;">Foto's van deze toepassing</label>
+        <div class="file-upload">
+          <span>Klik of sleep foto('s) van het materiaal hierheen</span>
+          <input type="file" class="toep-fotos" accept="image/*" multiple>
+          <div class="preview toep-foto-preview" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('toepassingen-container').appendChild(div);
+
+  // Setup foto handling
+  const fotoInput = div.querySelector('.toep-fotos');
+  const fotoPreview = div.querySelector('.toep-foto-preview');
+  fotoInput.addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    fileData[`toep_fotos_${id}`] = [];
+    fotoPreview.innerHTML = '';
+    files.forEach((file, idx) => {
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        fileData[`toep_fotos_${id}`].push({ data: ev.target.result, name: file.name, type: file.type });
+        fotoPreview.innerHTML += `<img src="${ev.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;" alt="foto ${idx+1}">`;
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+
+  berekenScore(id);
+}
+
+function toggleToepassing(id) {
+  const body = document.getElementById(`toepassing-body-${id}`);
+  body.classList.toggle('collapsed');
+}
+
+// ============================================================
+// OVAM MATERIAALSCORE BEREKENING
+// ============================================================
+function berekenScore(id) {
+  const card = document.getElementById(`toepassing-${id}`);
+  if (!card) return;
+  const A = parseFloat(card.querySelector('.toep-gebondenheid').value);
+  const B = parseFloat(card.querySelector('.toep-asbestsoort').value);
+  const C = parseFloat(card.querySelector('.toep-afscherming').value);
+  const D = parseFloat(card.querySelector('.toep-toestand').value);
+  const E = parseFloat(card.querySelector('.toep-concentratie').value);
+
+  const score = ((A + B) * C * D) * E;
+  let categorie, label, cssClass;
+  if (score < 9) { categorie = 1; label = 'Zeer laag risico'; cssClass = 'score-cat1'; }
+  else if (score <= 24) { categorie = 2; label = 'Laag risico'; cssClass = 'score-cat2'; }
+  else if (score <= 60) { categorie = 3; label = 'Verhoogd risico'; cssClass = 'score-cat3'; }
+  else { categorie = 4; label = 'Hoog risico'; cssClass = 'score-cat4'; }
+
+  const scoreEl = document.getElementById(`score-result-${id}`);
+  scoreEl.className = `score-display ${cssClass}`;
+  scoreEl.textContent = `Score: ${score.toFixed(1)} — Cat. ${categorie}: ${label}`;
+
+  // Update header too
+  const titleEl = document.getElementById(`toepassing-title-${id}`);
+  const ref = card.querySelector('.toep-ref').value || `Toepassing ${id}`;
+  const type = card.querySelector('.toep-type').value || '';
+  titleEl.innerHTML = `${ref} ${type ? '— ' + type : ''} <span class="score-display ${cssClass}" style="font-size:0.75rem;">${score.toFixed(1)} — ${label}</span>`;
+}
+
+// ============================================================
+// DOCX GENERATION
+// ============================================================
+async function generateDocx() {
+  const {
+    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
+    Header, Footer, AlignmentType, HeadingLevel, BorderStyle, WidthType,
+    ShadingType, PageBreak, PageNumber, LevelFormat
+  } = docx;
+
+  // Helper: base64 to Uint8Array
+  function base64ToUint8(dataUrl) {
+    const base64 = dataUrl.split(',')[1];
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  function getImageType(dataUrl) {
+    if (dataUrl.includes('image/png')) return 'png';
+    if (dataUrl.includes('image/gif')) return 'gif';
+    return 'jpg';
+  }
+
+  // Collect form data
+  const val = id => document.getElementById(id)?.value || '';
+  const formatDate = (d) => {
+    if (!d) return '';
+    const date = new Date(d);
+    return date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  const opdrachtgeverNaam = val('opdrachtgever_naam');
+  const opdrachtgeverAdres = val('opdrachtgever_adres');
+  const contactpersoon = val('contactpersoon');
+  const referentie = val('referentie');
+  const datumInspectie = formatDate(val('datum_inspectie'));
+  const datumRapport = formatDate(val('datum_rapport'));
+  const uitgevoerdDoor = val('uitgevoerd_door');
+  const erkenningId = val('erkenning_id');
+  const siteNaam = val('site_naam');
+  const siteAdres = val('site_adres');
+  const bouwjaar = val('bouwjaar');
+  const gebruik = val('gebruik');
+  const omschrijving = val('omschrijving_opdracht');
+
+  // Page dimensions (A4)
+  const pageW = 11906;
+  const pageH = 16838;
+  const marginLR = 1440;
+  const contentW = pageW - 2 * marginLR; // 9026
+
+  const border = { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" };
+  const borders = { top: border, bottom: border, left: border, right: border };
+  const cellMargins = { top: 60, bottom: 60, left: 100, right: 100 };
+  const headerShading = { fill: "1A5276", type: ShadingType.CLEAR };
+  const altShading = { fill: "F0F4F8", type: ShadingType.CLEAR };
+
+  // ===== BUILD SECTIONS =====
+  const children = [];
+
+  // --- VOORBLAD ---
+  children.push(new Paragraph({ spacing: { after: 400 }, children: [] }));
+
+  // Title
+  children.push(new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 100 },
+    children: [new TextRun({ text: "Inventaris van de asbesthoudende materialen", bold: true, size: 36, font: "Arial", color: "1A5276" })]
+  }));
+  children.push(new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 100 },
+    children: [new TextRun({ text: "Beoordeling van het blootstellingsrisico", bold: true, size: 28, font: "Arial", color: "2C3E50" })]
+  }));
+  children.push(new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 400 },
+    children: [new TextRun({ text: "Beheersprogramma", bold: true, size: 28, font: "Arial", color: "2C3E50" })]
+  }));
+
+  // Voorblad foto
+  if (fileData['foto_voorblad']) {
+    try {
+      const imgBytes = base64ToUint8(fileData['foto_voorblad'].data);
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 400 },
+        children: [new ImageRun({
+          type: getImageType(fileData['foto_voorblad'].data),
+          data: imgBytes,
+          transformation: { width: 400, height: 300 },
+          altText: { title: "Voorblad", description: "Foto voorblad", name: "voorblad" }
+        })]
+      }));
+    } catch(e) { console.warn('Foto voorblad error', e); }
+  }
+
+  // Opdrachtgever info
+  children.push(new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 200, after: 100 },
+    children: [new TextRun({ text: "Opdrachtgever", bold: true, size: 24, font: "Arial" })]
+  }));
+  children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: opdrachtgeverNaam, bold: true, size: 22, font: "Arial" })] }));
+  children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: opdrachtgeverAdres, size: 22, font: "Arial" })] }));
+
+  // Admin tabel
+  children.push(new Paragraph({ spacing: { before: 600, after: 200 }, children: [new TextRun({ text: "Administratieve gegevens", bold: true, size: 24, font: "Arial", color: "1A5276" })] }));
+
+  const adminRows = [
+    ["Referentie / dossiernummer", referentie],
+    ["Datum inspectie(s)", datumInspectie],
+    ["Datum rapport", datumRapport],
+    ["Uitgevoerd door", uitgevoerdDoor],
+    ["Erkenning persoons-ID OVAM", erkenningId],
+    ["Opdrachtgever", opdrachtgeverNaam],
+    ["Contactpersoon ter plaatse", contactpersoon],
+  ];
+
+  children.push(new Table({
+    width: { size: contentW, type: WidthType.DXA },
+    columnWidths: [Math.round(contentW * 0.45), Math.round(contentW * 0.55)],
+    rows: adminRows.map((row, i) => new TableRow({
+      children: [
+        new TableCell({
+          borders, margins: cellMargins,
+          width: { size: Math.round(contentW * 0.45), type: WidthType.DXA },
+          shading: i % 2 === 0 ? altShading : { type: ShadingType.CLEAR },
+          children: [new Paragraph({ children: [new TextRun({ text: row[0], bold: true, size: 20, font: "Arial" })] })]
+        }),
+        new TableCell({
+          borders, margins: cellMargins,
+          width: { size: Math.round(contentW * 0.55), type: WidthType.DXA },
+          shading: i % 2 === 0 ? altShading : { type: ShadingType.CLEAR },
+          children: [new Paragraph({ children: [new TextRun({ text: row[1], size: 20, font: "Arial" })] })]
+        }),
+      ]
+    }))
+  }));
+
+  // --- PAGE BREAK: INLEIDING ---
+  children.push(new Paragraph({ children: [new PageBreak()] }));
+
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_1,
+    spacing: { after: 200 },
+    children: [new TextRun({ text: "1. Inleiding", bold: true, size: 28, font: "Arial", color: "1A5276" })]
+  }));
+
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_2,
+    spacing: { before: 200, after: 100 },
+    children: [new TextRun({ text: "1.1 Omschrijving van de opdracht", bold: true, size: 24, font: "Arial", color: "2C3E50" })]
+  }));
+
+  const omschrText = omschrijving || `Het opstellen van een asbestinventaris in het kader van het normale gebruik van de gebouwen, met beoordeling van het blootstellingsrisico en opmaak van een beheersprogramma voor de gebouwen gelegen te ${siteAdres}.`;
+  children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: omschrText, size: 20, font: "Arial" })] }));
+
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_2,
+    spacing: { before: 200, after: 100 },
+    children: [new TextRun({ text: "1.2 Wettelijk kader", bold: true, size: 24, font: "Arial", color: "2C3E50" })]
+  }));
+
+  const wettelijk = [
+    "Codex over het welzijn op het werk \u2013 Boek VI, Titel 3: Asbest",
+    "Relevante koninklijke besluiten en decreten (o.a. KB 16 maart 2006 en latere wijzigingen)",
+    "Eventuele bijkomende regelgeving van toepassing op het type constructie"
+  ];
+  wettelijk.forEach(w => {
+    children.push(new Paragraph({ spacing: { after: 60 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${w}`, size: 20, font: "Arial" })] }));
+  });
+
+  // --- SECTIE 2: BESCHRIJVING GEBOUWEN ---
+  children.push(new Paragraph({ children: [new PageBreak()] }));
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_1,
+    spacing: { after: 200 },
+    children: [new TextRun({ text: "2. Beschrijving van de gebouwen / constructies", bold: true, size: 28, font: "Arial", color: "1A5276" })]
+  }));
+
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_2,
+    spacing: { before: 200, after: 100 },
+    children: [new TextRun({ text: "2.1 Algemene situering", bold: true, size: 24, font: "Arial", color: "2C3E50" })]
+  }));
+
+  const sitRows = [
+    ["Naam site / constructie", siteNaam],
+    ["Adres", siteAdres],
+    ["Bouwjaar (of risicobouwjaar)", bouwjaar],
+    ["Gebruik", gebruik],
+  ];
+  children.push(new Table({
+    width: { size: contentW, type: WidthType.DXA },
+    columnWidths: [Math.round(contentW * 0.4), Math.round(contentW * 0.6)],
+    rows: sitRows.map((row, i) => new TableRow({
+      children: [
+        new TableCell({
+          borders, margins: cellMargins,
+          width: { size: Math.round(contentW * 0.4), type: WidthType.DXA },
+          shading: altShading,
+          children: [new Paragraph({ children: [new TextRun({ text: row[0], bold: true, size: 20, font: "Arial" })] })]
+        }),
+        new TableCell({
+          borders, margins: cellMargins,
+          width: { size: Math.round(contentW * 0.6), type: WidthType.DXA },
+          children: [new Paragraph({ children: [new TextRun({ text: row[1], size: 20, font: "Arial" })] })]
+        }),
+      ]
+    }))
+  }));
+
+  // Situering foto
+  if (fileData['foto_situering']) {
+    try {
+      children.push(new Paragraph({ spacing: { before: 200, after: 200 }, alignment: AlignmentType.CENTER,
+        children: [new ImageRun({
+          type: getImageType(fileData['foto_situering'].data),
+          data: base64ToUint8(fileData['foto_situering'].data),
+          transformation: { width: 480, height: 380 },
+          altText: { title: "Situering", description: "Situering", name: "situering" }
+        })]
+      }));
+    } catch(e) { console.warn('Situering foto error', e); }
+  }
+
+  // 2.2 Indeling (zones)
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_2,
+    spacing: { before: 200, after: 100 },
+    children: [new TextRun({ text: "2.2 Indeling", bold: true, size: 24, font: "Arial", color: "2C3E50" })]
+  }));
+
+  const zoneCards = document.querySelectorAll('.zone-card');
+  zoneCards.forEach((zc, idx) => {
+    const naam = zc.querySelector('.zone-naam').value;
+    const bj = zc.querySelector('.zone-bouwjaar').value;
+    const opm = zc.querySelector('.zone-opmerking').value;
+    const text = `${naam}${bj ? ': bouwjaar ' + bj : ''}${opm ? ', ' + opm : ''}`;
+    children.push(new Paragraph({ spacing: { after: 60 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${text}`, size: 20, font: "Arial" })] }));
+
+    // Zone foto
+    const zoneId = zc.id.replace('zone-', '');
+    if (fileData[`zone_foto_${zoneId}`]) {
+      try {
+        children.push(new Paragraph({ spacing: { before: 100, after: 200 }, alignment: AlignmentType.CENTER,
+          children: [new ImageRun({
+            type: getImageType(fileData[`zone_foto_${zoneId}`].data),
+            data: base64ToUint8(fileData[`zone_foto_${zoneId}`].data),
+            transformation: { width: 350, height: 260 },
+            altText: { title: naam, description: naam, name: `zone${zoneId}` }
+          })]
+        }));
+      } catch(e) { console.warn('Zone foto error', e); }
+    }
+  });
+
+  // --- SECTIE 3: WERKWIJZE ---
+  children.push(new Paragraph({ children: [new PageBreak()] }));
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_1,
+    spacing: { after: 200 },
+    children: [new TextRun({ text: "3. Toegepaste werkwijze", bold: true, size: 28, font: "Arial", color: "1A5276" })]
+  }));
+
+  const werkwijzeSecties = [
+    { title: "3.1 Verzameling van bestaande gegevens", text: "Opsomming van beschikbare eerdere inventarissen, plannen, technische dossiers of verklaringen van betrokkenen." },
+    { title: "3.2 Visuele inspectie en monsterneming", items: ["Inspectie van zichtbare en bereikbare delen", "Vastlegging van locatie, toestand en vermoedelijke hoeveelheden", "Monsterneming uitgevoerd volgens de geldende veiligheidsmaatregelen"] },
+    { title: "3.3 Analyse van materiaalmonsters", items: ["Analyse uitgevoerd in erkend laboratorium", "Methode: polarisatiemicroscopie en dispersiekleuring (of gelijkwaardig)", "Materialen zonder staalname aangeduid als ZM (zonder monster)"] },
+    { title: "3.4 Risico-evaluatie", text: "De risico-evaluatie is gebaseerd op: kans op vrijgave van asbestvezels, kans op blootstelling en conclusie inzake blootstellingsrisico." },
+    { title: "3.5 Beheersprogramma", text: "Het beheersprogramma heeft volgens de wet tot doel de blootstelling aan asbestvezels van de werknemers zo laag mogelijk te houden (KB van 16 maart 2006, art. 12 \u00A71). Uit de beoordeling van het blootstellingsrisico voor elk van de asbesttoepassingen leiden wij af of een sanering gewenst is." },
+  ];
+
+  werkwijzeSecties.forEach(s => {
+    children.push(new Paragraph({
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 200, after: 100 },
+      children: [new TextRun({ text: s.title, bold: true, size: 24, font: "Arial", color: "2C3E50" })]
+    }));
+    if (s.text) {
+      children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: s.text, size: 20, font: "Arial" })] }));
+    }
+    if (s.items) {
+      s.items.forEach(item => {
+        children.push(new Paragraph({ spacing: { after: 40 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${item}`, size: 20, font: "Arial" })] }));
+      });
+    }
+  });
+
+  // --- SECTIE 4: BEPERKINGEN ---
+  children.push(new Paragraph({ children: [new PageBreak()] }));
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_1,
+    spacing: { after: 200 },
+    children: [new TextRun({ text: "4. Beperkingen van het onderzoek", bold: true, size: 28, font: "Arial", color: "1A5276" })]
+  }));
+
+  // Standaardbeperkingen (alleen de aangevinkte)
+  const stdBeperkingen = document.querySelectorAll('.std-beperking:checked');
+  stdBeperkingen.forEach(cb => {
+    children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: cb.value, size: 20, font: "Arial" })] }));
+  });
+
+  // Niet-onderzocht items (alleen aangevinkte)
+  const stdBepItems = document.querySelectorAll('.std-beperking-item:checked');
+  if (stdBepItems.length > 0) {
+    children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [new TextRun({ text: "Niet onderzocht:", bold: true, size: 20, font: "Arial" })] }));
+    stdBepItems.forEach(cb => {
+      children.push(new Paragraph({ spacing: { after: 40 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${cb.value}`, size: 20, font: "Arial" })] }));
+    });
+  }
+
+  // Extra beperkingen (dynamisch toegevoegd)
+  const extraBeperkingen = document.querySelectorAll('.beperking-tekst');
+  extraBeperkingen.forEach(input => {
+    if (input.value.trim()) {
+      children.push(new Paragraph({ spacing: { before: 60, after: 60 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${input.value.trim()}`, size: 20, font: "Arial" })] }));
+    }
+  });
+
+  children.push(new Paragraph({ spacing: { before: 100 }, children: [new TextRun({ text: "Er kan niet worden uitgesloten dat op niet-ge\u00efnspecteerde locaties bijkomende asbesthoudende materialen aanwezig zijn.", size: 20, font: "Arial", italics: true })] }));
+
+  // --- SECTIE 5: INVENTARIS ---
+  children.push(new Paragraph({ children: [new PageBreak()] }));
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_1,
+    spacing: { after: 200 },
+    children: [new TextRun({ text: "5. Inventaris van de asbesthoudende materialen", bold: true, size: 28, font: "Arial", color: "1A5276" })]
+  }));
+
+  // 5.1 Overzichtstabel
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_2,
+    spacing: { before: 200, after: 100 },
+    children: [new TextRun({ text: "5.1 Overzichtstabel", bold: true, size: 24, font: "Arial", color: "2C3E50" })]
+  }));
+
+  // Gather toepassing data
+  const toepassingen = [];
+  document.querySelectorAll('.toepassing-card').forEach(tc => {
+    const ref = tc.querySelector('.toep-ref').value;
+    const zone = tc.querySelector('.toep-zone').value;
+    const type = tc.querySelector('.toep-type').value === 'Ander' ? tc.querySelector('.toep-type-ander').value : tc.querySelector('.toep-type').value;
+    const hoeveelheid = tc.querySelector('.toep-hoeveelheid').value;
+    const methode = tc.querySelector('.toep-methode').value;
+    const staalref = tc.querySelector('.toep-staalref').value;
+    const asbesttype = tc.querySelector('.toep-asbesttype-resultaat').value;
+    const gebondenheid = parseFloat(tc.querySelector('.toep-gebondenheid').value);
+    const asbestsoort = parseFloat(tc.querySelector('.toep-asbestsoort').value);
+    const afscherming = parseFloat(tc.querySelector('.toep-afscherming').value);
+    const toestand = parseFloat(tc.querySelector('.toep-toestand').value);
+    const concentratie = parseFloat(tc.querySelector('.toep-concentratie').value);
+    const bereikbaarheid = tc.querySelector('.toep-bereikbaarheid').value;
+    const verwijdering = tc.querySelector('.toep-verwijdering').value;
+    const advies = tc.querySelector('.toep-advies').value;
+    const locatie = tc.querySelector('.toep-locatie').value;
+
+    const score = ((gebondenheid + asbestsoort) * afscherming * toestand) * concentratie;
+    let risico;
+    if (score < 9) risico = 'Zeer laag';
+    else if (score <= 24) risico = 'Laag';
+    else if (score <= 60) risico = 'Verhoogd';
+    else risico = 'Hoog';
+
+    const gebLabel = gebondenheid === 1 ? 'Hechtgebonden' : 'Niet-hechtgebonden';
+
+    const tcId = tc.id.replace('toepassing-', '');
+    const fotos = fileData[`toep_fotos_${tcId}`] || [];
+
+    toepassingen.push({ ref, zone, type, hoeveelheid, methode, staalref, asbesttype, gebLabel, bereikbaarheid, score, risico, verwijdering, advies, locatie, fotos, gebondenheid, asbestsoort, afscherming, toestand, concentratie });
+  });
+
+  if (toepassingen.length > 0) {
+    // Overzichtstabel
+    const colWidths = [800, 1400, 1600, 1200, 900, 900, 1100, 1126];
+    const headerTexts = ["Ref.", "Zone / Lokaal", "Toepassing", "Gebonden", "Hoev.", "EB/NEB", "Risico", "Score"];
+
+    const headerRow = new TableRow({
+      children: headerTexts.map((h, i) => new TableCell({
+        borders, margins: cellMargins,
+        width: { size: colWidths[i], type: WidthType.DXA },
+        shading: headerShading,
+        children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 16, font: "Arial", color: "FFFFFF" })] })]
+      }))
+    });
+
+    const dataRows = toepassingen.map(t => new TableRow({
+      children: [
+        [t.ref, t.zone, t.type, t.gebLabel, t.hoeveelheid, t.bereikbaarheid, t.risico, t.score.toFixed(1)].map((val, i) =>
+          new TableCell({
+            borders, margins: cellMargins,
+            width: { size: colWidths[i], type: WidthType.DXA },
+            children: [new Paragraph({ children: [new TextRun({ text: val || '-', size: 16, font: "Arial" })] })]
+          })
+        )
+      ].flat()
+    }));
+
+    children.push(new Table({
+      width: { size: contentW, type: WidthType.DXA },
+      columnWidths: colWidths,
+      rows: [headerRow, ...dataRows]
+    }));
+  }
+
+  // 5.2 Plannen
+  children.push(new Paragraph({ children: [new PageBreak()] }));
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_2,
+    spacing: { before: 200, after: 100 },
+    children: [new TextRun({ text: "5.2 Plannen en foto\u2019s", bold: true, size: 24, font: "Arial", color: "2C3E50" })]
+  }));
+
+  // Plannen
+  const planItems = document.querySelectorAll('.plan-item');
+  planItems.forEach((pi, idx) => {
+    const beschrijving = pi.querySelector('.plan-beschrijving').value;
+    const planId = pi.id.replace('plan-', '');
+    if (beschrijving) {
+      children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [new TextRun({ text: beschrijving, bold: true, size: 20, font: "Arial" })] }));
+    }
+    if (fileData[`plan_foto_${planId}`]) {
+      try {
+        children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 200 },
+          children: [new ImageRun({
+            type: getImageType(fileData[`plan_foto_${planId}`].data),
+            data: base64ToUint8(fileData[`plan_foto_${planId}`].data),
+            transformation: { width: 500, height: 400 },
+            altText: { title: beschrijving || `Plan ${idx+1}`, description: beschrijving || "Plan", name: `plan${planId}` }
+          })]
+        }));
+      } catch(e) { console.warn('Plan foto error', e); }
+    }
+  });
+
+  // Detail fiches per toepassing
+  toepassingen.forEach((t, idx) => {
+    children.push(new Paragraph({ children: [new PageBreak()] }));
+    children.push(new Paragraph({
+      heading: HeadingLevel.HEADING_2,
+      spacing: { after: 100 },
+      children: [new TextRun({ text: `5.3.${idx+1} Fiche: ${t.ref} \u2014 ${t.type}`, bold: true, size: 24, font: "Arial", color: "2C3E50" })]
+    }));
+
+    const ficheRows = [
+      ["Referentie", t.ref],
+      ["Zone / Lokaal", t.zone],
+      ["Toepassing", t.type],
+      ["Locatie", t.locatie],
+      ["Hoeveelheid", t.hoeveelheid],
+      ["Gebondenheid", t.gebLabel],
+      ["Bereikbaarheid", t.bereikbaarheid],
+      ["Identificatiemethode", t.methode],
+      ["Referentie staalname", t.staalref || "N.v.t."],
+      ["Asbesttype (resultaat)", t.asbesttype],
+      ["Materiaalscore", `${t.score.toFixed(1)} \u2014 ${t.risico} risico`],
+      ["Aanbevolen maatregel", t.verwijdering],
+    ];
+
+    const ficheColW1 = Math.round(contentW * 0.4);
+    const ficheColW2 = contentW - ficheColW1;
+
+    children.push(new Table({
+      width: { size: contentW, type: WidthType.DXA },
+      columnWidths: [ficheColW1, ficheColW2],
+      rows: ficheRows.map((row, i) => new TableRow({
+        children: [
+          new TableCell({
+            borders, margins: cellMargins,
+            width: { size: ficheColW1, type: WidthType.DXA },
+            shading: altShading,
+            children: [new Paragraph({ children: [new TextRun({ text: row[0], bold: true, size: 20, font: "Arial" })] })]
+          }),
+          new TableCell({
+            borders, margins: cellMargins,
+            width: { size: ficheColW2, type: WidthType.DXA },
+            children: [new Paragraph({ children: [new TextRun({ text: row[1] || '-', size: 20, font: "Arial" })] })]
+          }),
+        ]
+      }))
+    }));
+
+    // Score detail
+    children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [new TextRun({ text: "OVAM Materiaalscore berekening:", bold: true, size: 18, font: "Arial", color: "7F8C8D" })] }));
+    children.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `((A=${t.gebondenheid} + B=${t.asbestsoort}) \u00D7 C=${t.afscherming} \u00D7 D=${t.toestand}) \u00D7 E=${t.concentratie} = ${t.score.toFixed(1)}`, size: 18, font: "Arial", color: "7F8C8D" })] }));
+
+    if (t.advies) {
+      children.push(new Paragraph({ spacing: { before: 100, after: 60 }, children: [new TextRun({ text: "Advies:", bold: true, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: t.advies, size: 20, font: "Arial" })] }));
+    }
+
+    // Foto's
+    if (t.fotos && t.fotos.length > 0) {
+      children.push(new Paragraph({ spacing: { before: 100 }, children: [new TextRun({ text: "Foto\u2019s:", bold: true, size: 20, font: "Arial" })] }));
+      t.fotos.forEach((foto, fi) => {
+        try {
+          children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 60, after: 100 },
+            children: [new ImageRun({
+              type: getImageType(foto.data),
+              data: base64ToUint8(foto.data),
+              transformation: { width: 350, height: 260 },
+              altText: { title: `${t.ref} foto ${fi+1}`, description: `Foto ${fi+1}`, name: `toep${idx}f${fi}` }
+            })]
+          }));
+        } catch(e) { console.warn('Toepassing foto error', e); }
+      });
+    }
+  });
+
+  // --- SECTIE 6: RISICO-EVALUATIE ---
+  children.push(new Paragraph({ children: [new PageBreak()] }));
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_1,
+    spacing: { after: 200 },
+    children: [new TextRun({ text: "6. Evaluatie van het blootstellingsrisico", bold: true, size: 28, font: "Arial", color: "1A5276" })]
+  }));
+
+  children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: "Op basis van de vaststellingen wordt het blootstellingsrisico per toepassing ingeschaald volgens de OVAM-materiaalscore:", size: 20, font: "Arial" })] }));
+
+  const risicoItems = [
+    "Categorie 1: Zeer laag materiaalrisico (score < 9)",
+    "Categorie 2: Laag materiaalrisico (score 9-24)",
+    "Categorie 3: Verhoogd materiaalrisico (score 25-60)",
+    "Categorie 4: Hoog materiaalrisico (score > 60)"
+  ];
+  risicoItems.forEach(r => {
+    children.push(new Paragraph({ spacing: { after: 40 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${r}`, size: 20, font: "Arial" })] }));
+  });
+
+  // --- SECTIE 7: BEHEERSPROGRAMMA ---
+  children.push(new Paragraph({ children: [new PageBreak()] }));
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_1,
+    spacing: { after: 200 },
+    children: [new TextRun({ text: "7. Beheersprogramma", bold: true, size: 28, font: "Arial", color: "1A5276" })]
+  }));
+
+  const beheerSecties = [
+    { title: "7.1 Algemene bepalingen", items: ["Minstens jaarlijkse visuele controle", "Registratie en actualisatie van de inventaris", "Informatieverstrekking aan werknemers en derden"] },
+    { title: "7.2 Voorgestelde maatregelen", text: "Per toepassing kan \u00e9\u00e9n van de volgende maatregelen van toepassing zijn: periodieke visuele controle, fixeren of inkapselen, of verwijderen." },
+    { title: "7.3 Verwijdering van asbesthoudende materialen", items: ["Techniek van eenvoudige handelingen (hechtgebonden, onbeschadigd, zonder destructieve handelingen)", "Hermetische zone (niet-hechtgebonden of zwaar beschadigd)", "Couveusezakmethode (indien van toepassing)", "Uitvoering conform de geldende regelgeving en door bevoegde aannemers"] },
+    { title: "7.4 Asbestafval", items: ["Scheiding van asbesthoudend afval", "Afvoer via erkende kanalen", "Naleving van acceptatiecriteria van verwerkingsinstallaties"] },
+  ];
+
+  beheerSecties.forEach(s => {
+    children.push(new Paragraph({
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 200, after: 100 },
+      children: [new TextRun({ text: s.title, bold: true, size: 24, font: "Arial", color: "2C3E50" })]
+    }));
+    if (s.text) {
+      children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: s.text, size: 20, font: "Arial" })] }));
+    }
+    if (s.items) {
+      s.items.forEach(item => {
+        children.push(new Paragraph({ spacing: { after: 40 }, indent: { left: 360 }, children: [new TextRun({ text: `\u2022 ${item}`, size: 20, font: "Arial" })] }));
+      });
+    }
+  });
+
+  // --- SECTIE 8: CONCLUSIE ---
+  children.push(new Paragraph({ children: [new PageBreak()] }));
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_1,
+    spacing: { after: 200 },
+    children: [new TextRun({ text: "8. Conclusie", bold: true, size: 28, font: "Arial", color: "1A5276" })]
+  }));
+
+  if (toepassingen.length > 0) {
+    children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: "Aangetroffen asbesthoudende toepassingen", bold: true, size: 22, font: "Arial", underline: {} })] }));
+
+    toepassingen.forEach(t => {
+      children.push(new Paragraph({ spacing: { after: 60 }, children: [
+        new TextRun({ text: `${t.ref} \u2014 ${t.type}`, bold: true, size: 20, font: "Arial" }),
+        new TextRun({ text: ` (${t.zone})`, size: 20, font: "Arial" }),
+      ]}));
+      children.push(new Paragraph({ spacing: { after: 40 }, indent: { left: 360 }, children: [new TextRun({ text: `Materiaalrisico: ${t.risico} (score ${t.score.toFixed(1)})`, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { after: 80 }, indent: { left: 360 }, children: [new TextRun({ text: `Aanbevolen maatregel: ${t.verwijdering}`, size: 20, font: "Arial" })] }));
+    });
+  }
+
+  // Niet-asbestverdacht
+  const nietAsbDak = val('niet_asbest_dak');
+  const nietAsbStruct = val('niet_asbest_structuur');
+  const nietAsbWanden = val('niet_asbest_wanden');
+  const nietAsbVloeren = val('niet_asbest_vloeren');
+
+  if (nietAsbDak || nietAsbStruct || nietAsbWanden || nietAsbVloeren) {
+    children.push(new Paragraph({ spacing: { before: 200, after: 100 }, children: [new TextRun({ text: "Niet-asbestverdacht", bold: true, size: 22, font: "Arial", underline: {} })] }));
+
+    if (nietAsbDak) {
+      children.push(new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: "Dak- en plafondafwerking", bold: true, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: nietAsbDak, size: 20, font: "Arial" })] }));
+    }
+    if (nietAsbStruct) {
+      children.push(new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: "Dragende structuur", bold: true, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: nietAsbStruct, size: 20, font: "Arial" })] }));
+    }
+    if (nietAsbWanden) {
+      children.push(new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: "Wanden en gevels", bold: true, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: nietAsbWanden, size: 20, font: "Arial" })] }));
+    }
+    if (nietAsbVloeren) {
+      children.push(new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: "Vloeren en overige vaste elementen", bold: true, size: 20, font: "Arial" })] }));
+      children.push(new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: nietAsbVloeren, size: 20, font: "Arial" })] }));
+    }
+  }
+
+  // ===== BUILD DOCUMENT =====
+  const doc = new Document({
+    styles: {
+      default: { document: { run: { font: "Arial", size: 20 } } },
+      paragraphStyles: [
+        { id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true,
+          run: { size: 28, bold: true, font: "Arial", color: "1A5276" },
+          paragraph: { spacing: { before: 240, after: 200 }, outlineLevel: 0 } },
+        { id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true,
+          run: { size: 24, bold: true, font: "Arial", color: "2C3E50" },
+          paragraph: { spacing: { before: 180, after: 120 }, outlineLevel: 1 } },
+      ]
+    },
+    sections: [{
+      properties: {
+        page: {
+          size: { width: pageW, height: pageH },
+          margin: { top: 1440, right: marginLR, bottom: 1440, left: marginLR }
+        }
+      },
+      headers: {
+        default: new Header({
+          children: [new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            children: [new TextRun({ text: `Codex Asbestinventaris \u2014 ${opdrachtgeverNaam}`, size: 16, font: "Arial", color: "999999", italics: true })]
+          })]
+        })
+      },
+      footers: {
+        default: new Footer({
+          children: [new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({ text: "Pagina ", size: 16, font: "Arial", color: "999999" }),
+              new TextRun({ children: [PageNumber.CURRENT], size: 16, font: "Arial", color: "999999" }),
+            ]
+          })]
+        })
+      },
+      children
+    }]
+  });
+
+  // ===== EXPORT =====
+  const buffer = await Packer.toBlob(doc);
+  const filename = `${opdrachtgeverNaam || 'Codex'} - Codex - inventaris van de asbesthoudende toepassingen.docx`;
+  saveAs(buffer, filename);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+handleFileInput('foto_voorblad', 'preview_voorblad');
+handleFileInput('foto_situering', 'preview_situering');
+
+// Start with 1 zone and 1 toepassing
+addZone();
+addToepassing();
+</script>
+
+</body>
+</html>
