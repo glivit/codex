@@ -122,7 +122,7 @@ header p { opacity: 0.8; font-size: 0.9rem; }
   <div class="container">
     <div>
       <h1>Codex Asbestinventaris Generator</h1>
-      <p>Genereer professionele codex-documenten conform de Codex Welzijn op het Werk <span style="opacity:0.5;font-size:0.7rem;">v2.1</span></p>
+      <p>Genereer professionele codex-documenten conform de Codex Welzijn op het Werk <span style="opacity:0.5;font-size:0.7rem;">v2.2</span></p>
     </div>
   </div>
 </header>
@@ -590,13 +590,10 @@ function addToepassing() {
 
       <div style="background:#e8f4fd;border:1px solid #bee5eb;border-radius:6px;padding:12px;margin-bottom:16px;">
         <label style="font-weight:600;display:block;margin-bottom:6px;color:var(--primary);">Snel invullen vanuit fiche-database</label>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <select class="toep-fiche" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.9rem;font-family:inherit;">
-            ${ficheOptions}
-          </select>
-          <button class="btn btn-primary btn-sm" onclick="applyFiche(${id})" type="button">Toepassen</button>
-        </div>
-        <span style="font-size:0.75rem;color:var(--text-light);margin-top:4px;display:block;">Selecteer een fiche om risico-parameters automatisch in te vullen. Pas daarna zone, staal en resultaat aan.</span>
+        <select class="toep-fiche" onchange="applyFiche(${id})" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.9rem;font-family:inherit;">
+          ${ficheOptions}
+        </select>
+        <span style="font-size:0.75rem;color:var(--text-light);margin-top:4px;display:block;">Selecteer een fiche — risico-parameters worden direct ingevuld. Vul daarna zone, staal en resultaat aan.</span>
       </div>
 
       <div class="form-grid">
